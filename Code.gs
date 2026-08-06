@@ -13,18 +13,20 @@
  * 4. 저장(Ctrl+S) 후, 우측 상단 "배포 > 배포 관리"로 들어갑니다.
  * 5. 배포 목록에서 연필(편집) 아이콘 클릭 → "버전"을 "새 버전"으로 선택 → "배포".
  *    (⚠️ "새 배포"가 아니라 기존 배포를 "편집"해야 웹앱 URL이 그대로 유지됩니다.)
- * 6. 완료되면 시트 파일에 아래 3개의 탭이 자동으로 생기고 데이터가 쌓입니다:
- *    - ScreenGolf   : date, player, gHandicap, fir, gir, putt, distance
- *    - CourseRounds : date, player, handicap  (지표를 추가하면 열이 자동으로 늘어납니다)
- *    - Players      : name
+ * 6. 완료되면 시트 파일에 아래 탭들이 사용됩니다:
+ *    - Rounds       : date, player, gHandicap, fir, gir, putt, distance  (기존 스크린골프 데이터 탭)
+ *    - CourseRounds : date, player, handicap  (지표를 추가하면 열이 자동으로 늘어납니다. 신규 생성)
+ *    - Players      : name  (신규 생성)
  *
- * 만약 기존에 스크린골프 데이터가 이미 쌓여있는 시트 탭의 이름이 "ScreenGolf"가
- * 아니라면, 아래 SHEET_NAMES.screenGolf 값을 실제 탭 이름으로 바꿔주세요.
+ * 스크린골프 기존 데이터 탭 이름은 SHEET_NAMES.screenGolf 값과 반드시 일치해야 합니다.
+ * (장안 골프 동호회 시트 기준 실제 탭 이름은 "Rounds" 입니다 — 이미 반영되어 있습니다.)
+ * 만약 이전에 재배포하면서 "ScreenGolf"라는 빈 탭이 자동으로 하나 생겼다면,
+ * 그 빈 탭은 사용되지 않으니 삭제하셔도 됩니다.
  * ------------------------------------------------------------
  */
 
 const SHEET_NAMES = {
-  screenGolf: 'ScreenGolf',
+  screenGolf: 'Rounds',
   courseRounds: 'CourseRounds',
   players: 'Players'
 };
