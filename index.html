@@ -1209,6 +1209,13 @@
                     <input type="date" id="crNewRoundDate" required class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl p-2.5 text-sm focus:border-emerald-500 focus:outline-none">
                 </div>
 
+                <div class="bg-slate-800/60 p-3 sm:p-4 rounded-xl border border-slate-700/60">
+                    <label class="block text-xs font-bold text-emerald-300 mb-1">
+                        <svg class="inline-block align-[-0.15em] shrink-0 text-emerald-400 mr-1" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> 코스명 (선택)
+                    </label>
+                    <input type="text" id="crNewRoundCourseName" placeholder="예: 파인힐스CC" class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl p-2.5 text-sm focus:border-emerald-500 focus:outline-none">
+                </div>
+
                 <div class="space-y-3">
                     <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
                         <h4 class="text-xs sm:text-sm font-bold text-slate-200">플레이어별 기록 입력</h4>
@@ -1254,6 +1261,13 @@
                     <select id="crEditRoundDateSelect" class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl p-2.5 text-sm focus:border-emerald-500 focus:outline-none">
                         <!-- JS Populated -->
                     </select>
+                </div>
+
+                <div class="bg-slate-800/60 p-3 sm:p-4 rounded-xl border border-slate-700/60">
+                    <label class="block text-xs font-bold text-emerald-300 mb-1">
+                        <svg class="inline-block align-[-0.15em] shrink-0 text-emerald-400 mr-1" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> 코스명 (선택)
+                    </label>
+                    <input type="text" id="crEditRoundCourseName" placeholder="예: 파인힐스CC" class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl p-2.5 text-sm focus:border-emerald-500 focus:outline-none">
                 </div>
 
                 <div class="space-y-3">
@@ -1721,6 +1735,16 @@
         }
 
         // 하나의 라운드(특정 날짜, 동반자 5인 전체 기록)를 GOLF_DATA/DATES에 반영
+        // 새로 등록되는 회차에 기록이 없는 선수(예: 이 회차 이후에 합류한 신규 선수)가 있을 때,
+        // 그 자리를 이번 회차에 실제로 기록을 남긴 선수들의 평균값으로 채워 배열 길이를 DATES와 항상 동기화합니다.
+        function avgFromRecords(dataByPlayer, key) {
+            const vals = Object.values(dataByPlayer)
+                .map(d => d && d[key])
+                .filter(v => typeof v === 'number' && !isNaN(v));
+            if (!vals.length) return 0;
+            return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 100) / 100;
+        }
+
         function applyRoundData(formattedDate, dataByPlayer) {
             let dateIdx = DATES.indexOf(formattedDate);
             if (dateIdx === -1) {
@@ -1729,12 +1753,16 @@
                 dateIdx = DATES.indexOf(formattedDate);
                 PLAYERS.forEach(player => {
                     const d = dataByPlayer[player];
-                    if (!d) return;
-                    GOLF_DATA[player].gHandicap.splice(dateIdx, 0, d.gHandicap);
-                    GOLF_DATA[player].fir.splice(dateIdx, 0, d.fir);
-                    GOLF_DATA[player].gir.splice(dateIdx, 0, d.gir);
-                    GOLF_DATA[player].putt.splice(dateIdx, 0, d.putt);
-                    GOLF_DATA[player].distance.splice(dateIdx, 0, d.distance);
+                    const gHandicap = (d && !isNaN(d.gHandicap)) ? d.gHandicap : avgFromRecords(dataByPlayer, 'gHandicap');
+                    const fir = (d && !isNaN(d.fir)) ? d.fir : avgFromRecords(dataByPlayer, 'fir');
+                    const gir = (d && !isNaN(d.gir)) ? d.gir : avgFromRecords(dataByPlayer, 'gir');
+                    const putt = (d && !isNaN(d.putt)) ? d.putt : avgFromRecords(dataByPlayer, 'putt');
+                    const distance = (d && !isNaN(d.distance)) ? d.distance : avgFromRecords(dataByPlayer, 'distance');
+                    GOLF_DATA[player].gHandicap.splice(dateIdx, 0, gHandicap);
+                    GOLF_DATA[player].fir.splice(dateIdx, 0, fir);
+                    GOLF_DATA[player].gir.splice(dateIdx, 0, gir);
+                    GOLF_DATA[player].putt.splice(dateIdx, 0, putt);
+                    GOLF_DATA[player].distance.splice(dateIdx, 0, distance);
                 });
             } else {
                 PLAYERS.forEach(player => {
@@ -3164,13 +3192,29 @@
                 decimals: 1,
                 color: 'emerald',
                 better: 'low', // 'low' = 낮을수록 우수, 'high' = 높을수록 우수
+                default: 1.0, // 등록 폼에 처음 보여줄 기본값
                 icon: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
                 desc: '0에 가까울수록(낮을수록) 우수'
+            },
+            {
+                key: 'score',
+                label: '총타수',
+                unit: '타',
+                decimals: 0,
+                default: 90,
+                color: 'blue',
+                better: 'low',
+                icon: '<line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/>',
+                desc: '18홀 기준 총타수'
             }
             // 향후 추가 예시:
-            // { key: 'score', label: '총타수', unit: '타', decimals: 0, color: 'blue', better: 'low',
-            //   icon: '<circle cx="12" cy="12" r="9"/>', desc: '파 대비 총타수' }
+            // { key: 'putts', label: '퍼팅수', unit: '개', decimals: 0, color: 'amber', better: 'low',
+            //   icon: '<circle cx="12" cy="12" r="9"/>', desc: '18홀 총 퍼팅수' }
         ];
+
+        // 코스명은 선수별 수치가 아니라 "라운드(날짜) 단위"로 하나만 기록되는 정보라
+        // COURSE_METRICS와 별도로 CR_DATES 인덱스에 맞춰 관리합니다.
+        let CR_COURSE_NAMES = []; // CR_DATES와 인덱스 일치
 
         let CR_DATES = [];
         let CR_DATA = {}; // CR_DATA[player][metricKey] = [값 배열, CR_DATES와 인덱스 일치]
@@ -3195,6 +3239,7 @@
                 if (saved && Array.isArray(saved.dates) && saved.data) {
                     CR_DATES = saved.dates;
                     CR_DATA = saved.data;
+                    CR_COURSE_NAMES = Array.isArray(saved.courseNames) ? saved.courseNames : CR_DATES.map(() => '');
                 }
             } catch (err) {
                 console.warn('코스라운드 캐시를 불러오지 못했습니다.', err);
@@ -3202,16 +3247,17 @@
         }
 
         function crPersistLocalCache() {
-            localStorage.setItem(CR_CACHE_KEY, JSON.stringify({ dates: CR_DATES, data: CR_DATA }));
+            localStorage.setItem(CR_CACHE_KEY, JSON.stringify({ dates: CR_DATES, data: CR_DATA, courseNames: CR_COURSE_NAMES }));
         }
 
         // 하나의 코스라운드(특정 날짜, 동호회원 전체 기록)를 CR_DATA/CR_DATES에 반영
-        function crApplyRoundData(formattedDate, dataByPlayer) {
+        function crApplyRoundData(formattedDate, dataByPlayer, courseName) {
             let dateIdx = CR_DATES.indexOf(formattedDate);
             if (dateIdx === -1) {
                 CR_DATES.push(formattedDate);
                 CR_DATES.sort((a, b) => new Date(`2026/${a}`) - new Date(`2026/${b}`));
                 dateIdx = CR_DATES.indexOf(formattedDate);
+                CR_COURSE_NAMES.splice(dateIdx, 0, courseName || '');
                 PLAYERS.forEach(player => {
                     ensureCRPlayerData(player);
                     COURSE_METRICS.forEach(m => {
@@ -3221,6 +3267,7 @@
                     });
                 });
             } else {
+                if (courseName) CR_COURSE_NAMES[dateIdx] = courseName;
                 PLAYERS.forEach(player => {
                     const d = dataByPlayer[player];
                     if (!d) return;
@@ -3244,6 +3291,7 @@
                 if (!res.ok) throw new Error('코스라운드 조회 응답 오류: ' + res.status);
                 const rows = await res.json();
                 const byDate = {};
+                const courseNameByDate = {};
                 rows.forEach(row => {
                     if (!row.date || !row.player) return;
                     const date = normalizeSheetDate(row.date);
@@ -3251,17 +3299,18 @@
                     const rec = {};
                     COURSE_METRICS.forEach(m => { rec[m.key] = parseFloat(row[m.key]); });
                     byDate[date][row.player] = rec;
+                    if (row.courseName) courseNameByDate[date] = row.courseName;
                 });
-                Object.keys(byDate).forEach(date => crApplyRoundData(date, byDate[date]));
+                Object.keys(byDate).forEach(date => crApplyRoundData(date, byDate[date], courseNameByDate[date]));
             } catch (err) {
                 console.warn('구글 시트에서 코스라운드를 불러오지 못해 로컬 데이터로만 표시합니다.', err);
             }
         }
 
-        async function saveCourseRoundToSheet(formattedDate, dataByPlayer) {
+        async function saveCourseRoundToSheet(formattedDate, dataByPlayer, courseName) {
             if (!hasSheetBackend()) return;
             try {
-                const records = PLAYERS.map(player => ({ player, ...dataByPlayer[player] }));
+                const records = PLAYERS.map(player => ({ player, courseName: courseName || '', ...dataByPlayer[player] }));
                 await fetch(SHEET_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -3314,10 +3363,11 @@
                     <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
                         ${COURSE_METRICS.map(m => {
                             const existing = isEdit ? pData[m.key][dateIdx] : null;
-                            const defaultVal = existing != null ? existing : (m.better === 'low' ? 1.0 : 50.0);
+                            const defaultVal = existing != null ? existing : (m.default !== undefined ? m.default : (m.better === 'low' ? 1.0 : 50.0));
+                            const step = m.decimals === 0 ? '1' : '0.1';
                             return `<div>
                                 <label class="block text-[11px] text-slate-400 mb-1">${m.label}${m.unit ? '(' + m.unit + ')' : ''}</label>
-                                <input type="number" step="0.1" name="${prefix}${player}_${m.key}" value="${defaultVal}" required class="w-full bg-slate-900 border border-slate-700 text-emerald-300 font-semibold p-2 text-xs rounded-lg focus:outline-none focus:border-emerald-500">
+                                <input type="number" step="${step}" name="${prefix}${player}_${m.key}" value="${defaultVal}" required class="w-full bg-slate-900 border border-slate-700 text-emerald-300 font-semibold p-2 text-xs rounded-lg focus:outline-none focus:border-emerald-500">
                             </div>`;
                         }).join('')}
                     </div>
@@ -3366,6 +3416,7 @@
             const addModal = document.getElementById('crAddRoundModal');
             document.getElementById('crOpenAddModalBtn').addEventListener('click', () => {
                 document.getElementById('crNewRoundDate').value = new Date().toISOString().split('T')[0];
+                document.getElementById('crNewRoundCourseName').value = '';
                 crRenderPlayerInputs('crPlayerInputsContainer', null);
                 addModal.classList.remove('hidden');
             });
@@ -3381,6 +3432,8 @@
                 const formattedDate = `${dateParts[1]}/${dateParts[2]}`;
                 const formData = new FormData(e.target);
 
+                const courseName = document.getElementById('crNewRoundCourseName').value.trim();
+
                 const dataByPlayer = {};
                 PLAYERS.forEach(player => {
                     const rec = {};
@@ -3388,11 +3441,11 @@
                     dataByPlayer[player] = rec;
                 });
 
-                const dateIdx = crApplyRoundData(formattedDate, dataByPlayer);
+                const dateIdx = crApplyRoundData(formattedDate, dataByPlayer, courseName);
                 crSelectedDateIndex = dateIdx;
                 crRenderAll();
                 closeAddModal();
-                await saveCourseRoundToSheet(formattedDate, dataByPlayer);
+                await saveCourseRoundToSheet(formattedDate, dataByPlayer, courseName);
             });
 
             // 수정 모달
@@ -3403,6 +3456,7 @@
                 crRenderEditRoundDateOptions();
                 const defaultIdx = CR_DATES.length - 1;
                 editDateSelect.value = String(defaultIdx);
+                document.getElementById('crEditRoundCourseName').value = CR_COURSE_NAMES[defaultIdx] || '';
                 crRenderPlayerInputs('crEditPlayerInputsContainer', defaultIdx);
                 editModal.classList.remove('hidden');
             });
@@ -3410,7 +3464,9 @@
             document.getElementById('crCloseEditModalBtn').addEventListener('click', closeEditModal);
             document.getElementById('crCancelEditModalBtn').addEventListener('click', closeEditModal);
             editDateSelect.addEventListener('change', () => {
-                crRenderPlayerInputs('crEditPlayerInputsContainer', parseInt(editDateSelect.value, 10));
+                const idx = parseInt(editDateSelect.value, 10);
+                document.getElementById('crEditRoundCourseName').value = CR_COURSE_NAMES[idx] || '';
+                crRenderPlayerInputs('crEditPlayerInputsContainer', idx);
             });
 
             document.getElementById('crEditRoundForm').addEventListener('submit', async (e) => {
@@ -3420,6 +3476,8 @@
                 const formattedDate = CR_DATES[dateIdx];
                 const formData = new FormData(e.target);
 
+                const courseName = document.getElementById('crEditRoundCourseName').value.trim();
+
                 const dataByPlayer = {};
                 PLAYERS.forEach(player => {
                     const rec = {};
@@ -3427,11 +3485,11 @@
                     dataByPlayer[player] = rec;
                 });
 
-                crApplyRoundData(formattedDate, dataByPlayer);
+                crApplyRoundData(formattedDate, dataByPlayer, courseName);
                 crSelectedDateIndex = dateIdx;
                 crRenderAll();
                 closeEditModal();
-                await saveCourseRoundToSheet(formattedDate, dataByPlayer);
+                await saveCourseRoundToSheet(formattedDate, dataByPlayer, courseName);
             });
         }
 
@@ -3485,7 +3543,7 @@
             const sel = document.getElementById('crDateSelect');
             sel.innerHTML = CR_DATES.map((dateStr, idx) => `
                 <option value="${idx}" ${idx === crSelectedDateIndex ? 'selected' : ''}>
-                    2026-${dateStr.replace('/', '-')} (${idx + 1}회차)
+                    2026-${dateStr.replace('/', '-')} (${idx + 1}회차)${CR_COURSE_NAMES[idx] ? ' · ' + CR_COURSE_NAMES[idx] : ''}
                 </option>
             `).join('');
         }
@@ -3495,9 +3553,10 @@
             const p = CR_DATA[selectedPlayer];
             const idx = crSelectedDateIndex;
             const dateStr = CR_DATES[idx] || '-';
+            const courseName = CR_COURSE_NAMES[idx];
 
             document.getElementById('crPlayerAvatar').textContent = selectedPlayer;
-            document.getElementById('crSingleTitle').innerHTML = `${selectedPlayer} 플레이어 <span class="text-slate-400 text-xs sm:text-sm font-normal whitespace-nowrap">(2026-${dateStr.replace('/', '-')})</span>`;
+            document.getElementById('crSingleTitle').innerHTML = `${selectedPlayer} 플레이어 <span class="text-slate-400 text-xs sm:text-sm font-normal whitespace-nowrap">(2026-${dateStr.replace('/', '-')}${courseName ? ' · ' + courseName : ''})</span>`;
 
             const primary = COURSE_METRICS[0];
             const vals = (p[primary.key] || []).filter(v => v != null);
@@ -3537,7 +3596,7 @@
             ensureCRPlayerData(selectedPlayer);
             const p = CR_DATA[selectedPlayer];
 
-            thead.innerHTML = `<th class="p-2.5 sm:p-3">일자</th><th class="p-2.5 sm:p-3">플레이어</th>` +
+            thead.innerHTML = `<th class="p-2.5 sm:p-3">일자</th><th class="p-2.5 sm:p-3">코스명</th><th class="p-2.5 sm:p-3">플레이어</th>` +
                 COURSE_METRICS.map(m => `<th class="p-2.5 sm:p-3 text-right">${m.label}</th>`).join('');
 
             document.getElementById('crTableCount').innerText = CR_DATES.length;
@@ -3545,6 +3604,7 @@
             tbody.innerHTML = CR_DATES.map((date, idx) => `
                 <tr class="hover:bg-slate-800/50 transition ${idx === crSelectedDateIndex ? 'bg-emerald-900/30 text-emerald-200' : ''}">
                     <td class="p-3 text-slate-300 font-semibold">2026-${date.replace('/', '-')}</td>
+                    <td class="p-3 text-slate-400">${CR_COURSE_NAMES[idx] || '-'}</td>
                     <td class="p-3">${selectedPlayer}</td>
                     ${COURSE_METRICS.map(m => {
                         const v = p[m.key][idx];
@@ -3557,7 +3617,8 @@
         function crRenderCompareView() {
             const idx = crSelectedDateIndex;
             const dateStr = CR_DATES[idx] || '-';
-            document.getElementById('crCompareDateTitle').textContent = `2026-${dateStr.replace('/', '-')}`;
+            const courseName = CR_COURSE_NAMES[idx];
+            document.getElementById('crCompareDateTitle').textContent = `2026-${dateStr.replace('/', '-')}${courseName ? ' · ' + courseName : ''}`;
 
             document.getElementById('crCompareTableHead').innerHTML = `<th class="p-3">플레이어</th>` +
                 COURSE_METRICS.map(m => `<th class="p-3 text-center">${m.label}${m.unit ? ' (' + m.unit + ')' : ''}</th>`).join('');

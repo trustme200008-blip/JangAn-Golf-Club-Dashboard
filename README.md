@@ -15,29 +15,32 @@
 
 | 구분 | 스크린골프 | 코스라운드 |
 |---|---|---|
-| 지표 | G핸디, 페어웨이 안착률, 그린 적중률, 홀당 퍼팅수, 드라이버 비거리 (5개) | 핸디 (1개, 확장 가능) |
+| 지표 | G핸디, 페어웨이 안착률, 그린 적중률, 홀당 퍼팅수, 드라이버 비거리 (5개) | 핸디, 총타수 (+코스명, 확장 가능) |
 | 보기 | 개별 / 동반자 비교 / 지표 추이 / 게임 / 보고서 | 개별 / 동반자 비교 / 지표 추이 / 순위 |
 | 데이터 등록 | 관리자 모드에서 라운드 추가·수정 | 관리자 모드에서 라운드 추가·수정 |
 
 - **선수(동호회원) 명단**은 두 탭이 공용으로 사용하며, 관리자 모드의 "선수 관리"에서 추가·삭제할 수 있습니다.
 - **관리자 모드 PIN**: `0243` (index.html 안 `ADMIN_PIN` 상수에서 변경 가능)
+- **코스명**은 선수별 수치가 아니라 라운드(날짜) 하나에 공통으로 붙는 정보라, 등록/수정 폼에 별도 입력칸으로 있습니다. (선택 입력)
 - 데이터는 Google Sheets에 저장되어, 링크를 여는 모든 사람이 같은 데이터를 봅니다.
 - 시트 연동이 안 되어 있거나 오프라인이어도, 화면 조회 자체는 그대로 동작합니다(등록만 이 브라우저에만 저장됨).
 
 ## 코스라운드 지표 확장 방법
 
 `index.html`의 `COURSE_METRICS` 배열(검색: `const COURSE_METRICS`)에 항목을 추가하면
-카드 / 표 / 그래프 / 등록폼이 전부 자동으로 반영됩니다. 예:
+카드 / 표 / 그래프 / 등록폼이 전부 자동으로 반영됩니다. 현재는 핸디·총타수 2개가 들어있고, 예를 들어 퍼팅수를 더 추가하려면:
 
 ```js
 const COURSE_METRICS = [
-    { key: 'handicap', label: '핸디', unit: '', decimals: 1, color: 'emerald', better: 'low', icon: '...', desc: '...' },
-    { key: 'score', label: '총타수', unit: '타', decimals: 0, color: 'blue', better: 'low', icon: '...', desc: '파 대비 총타수' }
+    { key: 'handicap', label: '핸디', unit: '', decimals: 1, color: 'emerald', better: 'low', default: 1.0, icon: '...', desc: '...' },
+    { key: 'score', label: '총타수', unit: '타', decimals: 0, color: 'blue', better: 'low', default: 90, icon: '...', desc: '18홀 기준 총타수' },
+    { key: 'putts', label: '퍼팅수', unit: '개', decimals: 0, color: 'amber', better: 'low', default: 32, icon: '...', desc: '18홀 총 퍼팅수' }
 ];
 ```
 
 - `color`는 `emerald / blue / teal / amber / purple` 중에서 고르면 기존 디자인과 바로 어울립니다.
 - `better`는 `'low'`(낮을수록 우수, 예: 핸디) 또는 `'high'`(높을수록 우수)로 순위 정렬 방향을 결정합니다.
+- `default`는 등록 폼에 처음 보여줄 기본값입니다(생략 가능).
 - Google Apps Script(`Code.gs`) 쪽은 **수정할 필요가 없습니다** — 새 지표 필드가 들어오면 시트에 열을 자동으로 추가합니다.
 
 ## Google Apps Script 백엔드 배포 (필수 — 아래 안내대로 한 번 재배포해주세요)
