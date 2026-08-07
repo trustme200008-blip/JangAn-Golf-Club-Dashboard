@@ -15,7 +15,7 @@
 
 | 구분 | 스크린골프 | 코스라운드 |
 |---|---|---|
-| 지표 | G핸디, 페어웨이 안착률, 그린 적중률, 홀당 퍼팅수, 드라이버 비거리 (5개) | 핸디, 총타수 (+코스명, 확장 가능) |
+| 지표 | G핸디, 페어웨이 안착률, 그린 적중률, 홀당 퍼팅수, 드라이버 비거리 (5개) | 총타수 (+코스명, 확장 가능) |
 | 보기 | 개별 / 동반자 비교 / 지표 추이 / 게임 / 보고서 | 개별 / 동반자 비교 / 지표 추이 / 게임 / 순위 |
 | 데이터 등록 | 관리자 모드에서 라운드 추가·수정 | 관리자 모드에서 라운드 추가·수정 |
 
@@ -31,15 +31,17 @@
 ## 코스라운드 지표 확장 방법
 
 `index.html`의 `COURSE_METRICS` 배열(검색: `const COURSE_METRICS`)에 항목을 추가하면
-카드 / 표 / 그래프 / 등록폼이 전부 자동으로 반영됩니다. 현재는 핸디·총타수 2개가 들어있고, 예를 들어 퍼팅수를 더 추가하려면:
+카드 / 표 / 그래프 / 등록폼이 전부 자동으로 반영됩니다. 현재는 총타수 1개만 들어있고, 예를 들어 핸디·퍼팅수를 더 추가하려면:
 
 ```js
 const COURSE_METRICS = [
-    { key: 'handicap', label: '핸디', unit: '', decimals: 1, color: 'emerald', better: 'low', default: 1.0, icon: '...', desc: '...' },
-    { key: 'score', label: '총타수', unit: '타', decimals: 0, color: 'blue', better: 'low', default: 90, icon: '...', desc: '18홀 기준 총타수' },
+    { key: 'score', label: '총타수', unit: '타', decimals: 0, color: 'emerald', better: 'low', default: 90, icon: '...', desc: '18홀 기준 총타수' },
+    { key: 'handicap', label: '핸디', unit: '', decimals: 1, color: 'blue', better: 'low', default: 1.0, icon: '...', desc: '...' },
     { key: 'putts', label: '퍼팅수', unit: '개', decimals: 0, color: 'amber', better: 'low', default: 32, icon: '...', desc: '18홀 총 퍼팅수' }
 ];
 ```
+
+(핸디 항목은 삭제하지 않고 `index.html` 안에 주석으로 예시를 남겨뒀으니, 나중에 다시 쓰고 싶으면 주석만 풀면 됩니다.)
 
 - `color`는 `emerald / blue / teal / amber / purple` 중에서 고르면 기존 디자인과 바로 어울립니다.
 - `better`는 `'low'`(낮을수록 우수, 예: 핸디) 또는 `'high'`(높을수록 우수)로 순위 정렬 방향을 결정합니다.

@@ -951,7 +951,7 @@
                         </div>
                     </div>
                     <div class="text-right shrink-0">
-                        <span class="text-[10px] sm:text-xs text-slate-400">누적 평균 핸디</span>
+                        <span id="crPlayerAvgLabel" class="text-[10px] sm:text-xs text-slate-400">누적 평균</span>
                         <div id="crPlayerAvgHandicap" class="text-sm sm:text-base font-bold text-emerald-300">-</div>
                     </div>
                 </div>
@@ -3258,28 +3258,20 @@
 
         const COURSE_METRICS = [
             {
-                key: 'handicap',
-                label: '핸디',
-                unit: '',
-                decimals: 1,
-                color: 'emerald',
-                better: 'low', // 'low' = 낮을수록 우수, 'high' = 높을수록 우수
-                default: 1.0, // 등록 폼에 처음 보여줄 기본값
-                icon: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
-                desc: '0에 가까울수록(낮을수록) 우수'
-            },
-            {
                 key: 'score',
                 label: '총타수',
                 unit: '타',
                 decimals: 0,
                 default: 90,
-                color: 'blue',
-                better: 'low',
+                color: 'emerald',
+                better: 'low', // 'low' = 낮을수록 우수, 'high' = 높을수록 우수
                 icon: '<line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/>',
                 desc: '18홀 기준 총타수'
             }
             // 향후 추가 예시:
+            // { key: 'handicap', label: '핸디', unit: '', decimals: 1, color: 'blue', better: 'low', default: 1.0,
+            //   icon: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
+            //   desc: '0에 가까울수록(낮을수록) 우수' },
             // { key: 'putts', label: '퍼팅수', unit: '개', decimals: 0, color: 'amber', better: 'low',
             //   icon: '<circle cx="12" cy="12" r="9"/>', desc: '18홀 총 퍼팅수' }
         ];
@@ -3691,9 +3683,16 @@
             document.getElementById('crSingleTitle').innerHTML = `${selectedPlayer} 플레이어 <span class="text-slate-400 text-xs sm:text-sm font-normal whitespace-nowrap">(2026-${dateStr.replace('/', '-')}${courseName ? ' · ' + courseName : ''})</span>`;
 
             const primary = COURSE_METRICS[0];
-            const vals = (p[primary.key] || []).filter(v => v != null);
-            const avg = vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length) : null;
-            document.getElementById('crPlayerAvgHandicap').textContent = avg != null ? avg.toFixed(primary.decimals) : '-';
+            const avgLabelEl = document.getElementById('crPlayerAvgLabel');
+            if (primary) {
+                if (avgLabelEl) avgLabelEl.textContent = `누적 평균 ${primary.label}`;
+                const vals = (p[primary.key] || []).filter(v => v != null);
+                const avg = vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+                document.getElementById('crPlayerAvgHandicap').textContent = avg != null ? avg.toFixed(primary.decimals) + (primary.unit || '') : '-';
+            } else {
+                if (avgLabelEl) avgLabelEl.textContent = '누적 평균';
+                document.getElementById('crPlayerAvgHandicap').textContent = '-';
+            }
 
             crRenderMetricCards();
             crRenderFullTable();
