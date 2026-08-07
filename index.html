@@ -3727,19 +3727,19 @@
             ensureCRPlayerData(selectedPlayer);
             const p = CR_DATA[selectedPlayer];
 
-            thead.innerHTML = `<th class="p-2.5 sm:p-3">일자</th><th class="p-2.5 sm:p-3">코스명</th><th class="p-2.5 sm:p-3">플레이어</th>` +
-                COURSE_METRICS.map(m => `<th class="p-2.5 sm:p-3 text-right">${m.label}</th>`).join('');
+            thead.innerHTML = `<th class="p-2.5 sm:p-3 whitespace-nowrap">일자</th><th class="p-2.5 sm:p-3 whitespace-nowrap">코스명</th><th class="p-2.5 sm:p-3 whitespace-nowrap">플레이어</th>` +
+                COURSE_METRICS.map(m => `<th class="p-2.5 sm:p-3 text-right whitespace-nowrap">${m.label}</th>`).join('');
 
             document.getElementById('crTableCount').innerText = CR_DATES.length;
 
             tbody.innerHTML = CR_DATES.map((date, idx) => `
                 <tr class="hover:bg-slate-800/50 transition ${idx === crSelectedDateIndex ? 'bg-emerald-900/30 text-emerald-200' : ''}">
-                    <td class="p-3 text-slate-300 font-semibold">2026-${date.replace('/', '-')}</td>
-                    <td class="p-3 text-slate-400">${CR_COURSE_NAMES[idx] || '-'}</td>
-                    <td class="p-3">${selectedPlayer}</td>
+                    <td class="p-3 text-slate-300 font-semibold whitespace-nowrap">2026-${date.replace('/', '-')}</td>
+                    <td class="p-3 text-slate-400 whitespace-nowrap">${CR_COURSE_NAMES[idx] || '-'}</td>
+                    <td class="p-3 whitespace-nowrap">${selectedPlayer}</td>
                     ${COURSE_METRICS.map(m => {
                         const v = p[m.key][idx];
-                        return `<td class="p-3 text-right font-bold">${v != null ? v.toFixed(m.decimals) + (m.unit || '') : '-'}</td>`;
+                        return `<td class="p-3 text-right font-bold whitespace-nowrap">${v != null ? v.toFixed(m.decimals) + (m.unit || '') : '-'}</td>`;
                     }).join('')}
                 </tr>
             `).join('');
