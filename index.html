@@ -921,6 +921,9 @@
                 <button id="crModeTrend" class="shrink-0 whitespace-nowrap md:flex-1 px-4 py-2 rounded-lg font-medium transition text-slate-400 hover:text-white text-center">
                     <svg class="inline-block align-[-0.15em] shrink-0 mr-1" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>지표 추이
                 </button>
+                <button id="crModeGame" class="shrink-0 whitespace-nowrap md:flex-1 px-4 py-2 rounded-lg font-medium transition text-slate-400 hover:text-white text-center">
+                    <svg class="inline-block align-[-0.15em] shrink-0 mr-1" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg>게임
+                </button>
                 <button id="crModeRank" class="shrink-0 whitespace-nowrap md:flex-1 px-4 py-2 rounded-lg font-medium transition text-slate-400 hover:text-white text-center">
                     <svg class="inline-block align-[-0.15em] shrink-0 mr-1" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>순위
                 </button>
@@ -1046,6 +1049,42 @@
                     </div>
                     <div class="h-64 sm:h-80 w-full relative">
                         <canvas id="crTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: GAME (스크래치 게임) -->
+            <div id="crViewGame" class="hidden space-y-6">
+                <div class="glass-panel p-4 sm:p-6 rounded-2xl">
+                    <div class="mb-4 sm:mb-6">
+                        <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                            <svg class="inline-block align-[-0.15em] shrink-0 text-emerald-400" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg> 스크래치 게임
+                        </h3>
+                        <p class="text-[11px] sm:text-xs text-slate-400 mt-0.5">
+                            <span id="crGameRangeLabel">최근 5회차</span> 총타수 평균 기준, 가장 낮은 평균 타수 플레이어가 스크래치(0타)이고 나머지는 그 차이만큼(반올림) 타수를 받습니다.
+                        </p>
+                    </div>
+
+                    <!-- Ranked List -->
+                    <div id="crGameListContainer" class="space-y-2.5 mb-6">
+                        <!-- JS Populated -->
+                    </div>
+
+                    <!-- 선택한 플레이어 기준 상대별 타수 차이 -->
+                    <div class="mb-6">
+                        <h4 class="text-sm sm:text-base font-bold text-white mb-1 flex items-center gap-2">
+                            <svg class="inline-block align-[-0.15em] shrink-0 text-emerald-400" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            <span id="crGameSelectedPlayerLabel">민</span> 기준 상대별 타수 차이
+                        </h4>
+                        <p class="text-[11px] sm:text-xs text-slate-400 mb-3">상단 "플레이어 선택"에서 고른 플레이어와 나머지 동호회원의 최근 5회차 총타수 평균 차이(반올림)입니다.</p>
+                        <div id="crGameVsListContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <!-- JS Populated -->
+                        </div>
+                    </div>
+
+                    <!-- Bar Chart -->
+                    <div class="h-56 sm:h-72 w-full relative">
+                        <canvas id="crGameChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -1555,6 +1594,7 @@
             if (typeof crActiveMode !== 'undefined') {
                 if (crActiveMode === 'compare' && typeof crRenderCompareChart === 'function') crRenderCompareChart();
                 if (crActiveMode === 'trend' && typeof crRenderTrendChart === 'function') crRenderTrendChart();
+                if (crActiveMode === 'game' && typeof crRenderGameChart === 'function') crRenderGameChart();
             }
         }
 
@@ -3253,6 +3293,7 @@
         let crSelectedDateIndex = -1;
         let crActiveMode = 'single';
         let crTrendChart = null;
+        let crGameChart = null;
         let crCompareChart = null;
         const CR_CACHE_KEY = 'jangan_golf_course_round_cache_v1';
 
@@ -3493,6 +3534,7 @@
             document.getElementById('crModeSingle').addEventListener('click', () => crSetMode('single'));
             document.getElementById('crModeCompare').addEventListener('click', () => crSetMode('compare'));
             document.getElementById('crModeTrend').addEventListener('click', () => crSetMode('trend'));
+            document.getElementById('crModeGame').addEventListener('click', () => crSetMode('game'));
             document.getElementById('crModeRank').addEventListener('click', () => crSetMode('rank'));
 
             document.getElementById('crCompareMetricSelect').addEventListener('change', () => crRenderCompareChart());
@@ -3581,10 +3623,10 @@
 
         function crSetMode(mode) {
             crActiveMode = mode;
-            ['crModeSingle', 'crModeCompare', 'crModeTrend', 'crModeRank'].forEach(id => {
+            ['crModeSingle', 'crModeCompare', 'crModeTrend', 'crModeGame', 'crModeRank'].forEach(id => {
                 document.getElementById(id).className = "shrink-0 whitespace-nowrap md:flex-1 px-4 py-2 rounded-lg font-medium transition text-slate-400 hover:text-white text-center";
             });
-            ['crViewSingle', 'crViewCompare', 'crViewTrend', 'crViewRank'].forEach(id => {
+            ['crViewSingle', 'crViewCompare', 'crViewTrend', 'crViewGame', 'crViewRank'].forEach(id => {
                 document.getElementById(id).classList.add('hidden');
             });
 
@@ -3598,6 +3640,9 @@
             } else if (mode === 'trend') {
                 document.getElementById('crModeTrend').className = activeCls;
                 document.getElementById('crViewTrend').classList.remove('hidden');
+            } else if (mode === 'game') {
+                document.getElementById('crModeGame').className = activeCls;
+                document.getElementById('crViewGame').classList.remove('hidden');
             } else if (mode === 'rank') {
                 document.getElementById('crModeRank').className = activeCls;
                 document.getElementById('crViewRank').classList.remove('hidden');
@@ -3622,6 +3667,7 @@
             if (crActiveMode === 'single') crRenderSingleView();
             if (crActiveMode === 'compare') crRenderCompareView();
             if (crActiveMode === 'trend') crRenderTrendView();
+            if (crActiveMode === 'game') crRenderGameView();
             if (crActiveMode === 'rank') crRenderRankView();
         }
 
@@ -3801,6 +3847,189 @@
                     scales: {
                         x: { ticks: { color: colors.tick, maxRotation: 60, minRotation: 45 }, grid: { display: false } },
                         y: { ticks: { color: colors.tick }, grid: { color: colors.grid } }
+                    }
+                }
+            });
+        }
+
+        // ===== 코스라운드 스크래치 게임 (최근 5회차 총타수 평균 기준) =====
+        function crGetGameWindowIndices() {
+            const n = CR_DATES.length;
+            if (n === 0) return [];
+            const start = Math.max(0, n - 5);
+            const idxs = [];
+            for (let i = start; i < n; i++) idxs.push(i);
+            return idxs;
+        }
+
+        function crGetGameStandings() {
+            const metric = COURSE_METRICS.find(m => m.key === 'score');
+            if (!metric) return [];
+            const idxs = crGetGameWindowIndices();
+            if (!idxs.length) return [];
+            const standings = [];
+            PLAYERS.forEach((player, i) => {
+                ensureCRPlayerData(player);
+                const vals = idxs.map(idx => CR_DATA[player][metric.key][idx]).filter(v => v != null && !isNaN(v));
+                if (!vals.length) return; // 최근 회차 기록이 없는 선수는 게임 순위에서 제외
+                const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+                standings.push({ player, color: playerLineColor(player, i), avg, roundCount: vals.length });
+            });
+            if (!standings.length) return [];
+            const minAvg = Math.min(...standings.map(s => s.avg));
+            standings.forEach(s => { s.diff = Math.round(s.avg - minAvg); });
+            return standings;
+        }
+
+        function crRenderGameView() {
+            const metric = COURSE_METRICS.find(m => m.key === 'score');
+            const idxs = crGetGameWindowIndices();
+            const rangeLabelEl = document.getElementById('crGameRangeLabel');
+            if (rangeLabelEl) {
+                if (idxs.length > 1) {
+                    const first = CR_DATES[idxs[0]].replace('/', '-');
+                    const last = CR_DATES[idxs[idxs.length - 1]].replace('/', '-');
+                    rangeLabelEl.textContent = `최근 ${idxs.length}회차 (2026-${first} ~ 2026-${last})`;
+                } else if (idxs.length === 1) {
+                    rangeLabelEl.textContent = `최근 1회차 (2026-${CR_DATES[idxs[0]].replace('/', '-')})`;
+                } else {
+                    rangeLabelEl.textContent = '최근 회차';
+                }
+            }
+
+            const listContainer = document.getElementById('crGameListContainer');
+            const vsContainer = document.getElementById('crGameVsListContainer');
+            const selectedLabelEl = document.getElementById('crGameSelectedPlayerLabel');
+            if (selectedLabelEl) selectedLabelEl.textContent = selectedPlayer;
+
+            if (!metric) {
+                if (listContainer) listContainer.innerHTML = `<p class="text-xs text-slate-400">총타수 지표가 없어 게임을 진행할 수 없습니다.</p>`;
+                if (vsContainer) vsContainer.innerHTML = '';
+                return;
+            }
+
+            const standings = crGetGameStandings().sort((a, b) => a.avg - b.avg);
+
+            if (listContainer) {
+                if (!standings.length) {
+                    listContainer.innerHTML = `<p class="text-xs text-slate-400">최근 회차에 총타수가 기록된 동호회원이 없습니다.</p>`;
+                } else {
+                    listContainer.innerHTML = standings.map((s, i) => {
+                        const isScratch = s.diff === 0;
+                        const isSelected = s.player === selectedPlayer;
+                        const rankBadgeClass = i === 0 ? 'bg-amber-400 text-slate-950' : 'bg-slate-700 text-slate-200';
+                        const diffBadge = isScratch
+                            ? `<span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold whitespace-nowrap">스크래치</span>`
+                            : `<span class="px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold whitespace-nowrap">+${s.diff}타</span>`;
+                        const rowClass = isSelected
+                            ? 'flex items-center justify-between gap-3 bg-emerald-950/30 border-2 border-emerald-500/60 rounded-xl px-3.5 sm:px-4 py-3'
+                            : 'flex items-center justify-between gap-3 bg-slate-800/40 border border-slate-700/50 rounded-xl px-3.5 sm:px-4 py-3';
+                        const selectedTag = isSelected
+                            ? `<span class="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-emerald-500 text-slate-950 font-bold align-middle">나</span>`
+                            : '';
+                        return `
+                            <div class="${rowClass}">
+                                <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                                    <span class="w-6 h-6 sm:w-7 sm:h-7 rounded-full ${rankBadgeClass} flex items-center justify-center font-bold text-[11px] sm:text-xs shrink-0">${i + 1}</span>
+                                    <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center font-bold text-xs sm:text-sm shrink-0">${s.player}</span>
+                                    <div class="min-w-0">
+                                        <p class="text-xs sm:text-sm font-bold text-white truncate">${s.player} 플레이어${selectedTag}</p>
+                                        <p class="text-[10px] sm:text-[11px] text-slate-400">평균 총타수 ${s.avg.toFixed(1)}타 (${s.roundCount}회차 평균)</p>
+                                    </div>
+                                </div>
+                                <div class="text-right shrink-0">
+                                    ${diffBadge}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+
+            if (vsContainer) {
+                const selfEntry = standings.find(s => s.player === selectedPlayer);
+                if (!selfEntry) {
+                    vsContainer.innerHTML = `<p class="text-xs text-slate-400">${selectedPlayer} 선수의 최근 회차 총타수 기록이 없어 비교할 수 없습니다.</p>`;
+                } else {
+                    const others = standings.filter(s => s.player !== selectedPlayer);
+                    vsContainer.innerHTML = others.map(o => {
+                        const diff = Math.round(o.avg - selfEntry.avg);
+                        let badge;
+                        if (diff > 0) {
+                            badge = `<span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold whitespace-nowrap">${diff}타 줌</span>`;
+                        } else if (diff < 0) {
+                            badge = `<span class="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold whitespace-nowrap">${Math.abs(diff)}타 받음</span>`;
+                        } else {
+                            badge = `<span class="px-2.5 py-1 rounded-full bg-slate-700/50 text-slate-300 text-xs font-bold whitespace-nowrap">동타</span>`;
+                        }
+                        return `
+                            <div class="flex items-center justify-between gap-3 bg-slate-800/40 border border-slate-700/50 rounded-xl px-3.5 py-2.5">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <span class="w-7 h-7 rounded-full bg-slate-700 text-slate-100 flex items-center justify-center font-bold text-xs shrink-0">${o.player}</span>
+                                    <div class="min-w-0">
+                                        <p class="text-xs sm:text-sm font-bold text-white truncate">${selectedPlayer} vs ${o.player}</p>
+                                        <p class="text-[10px] text-slate-400">평균 총타수 ${o.avg.toFixed(1)}타</p>
+                                    </div>
+                                </div>
+                                ${badge}
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+
+            crRenderGameChart();
+        }
+
+        function crRenderGameChart() {
+            if (crActiveMode !== 'game') return;
+            const canvas = document.getElementById('crGameChart');
+            if (!canvas) return;
+            if (!isChartJsLoaded()) { showChartFallback('crGameChart'); return; }
+
+            const theme = chartColors();
+            const standings = crGetGameStandings().sort((a, b) => a.diff - b.diff);
+
+            if (crGameChart) { crGameChart.destroy(); crGameChart = null; }
+            if (!standings.length) return;
+
+            crGameChart = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: standings.map(s => s.player),
+                    datasets: [{
+                        label: '평균 타수 차이(타)',
+                        data: standings.map(s => s.diff),
+                        backgroundColor: standings.map(s => s.diff === 0 ? theme.accent : hexToRgba(s.color, 0.65)),
+                        borderColor: standings.map(s => s.color),
+                        borderWidth: 1.5,
+                        borderRadius: 6,
+                        maxBarThickness: 56
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y === 0 ? '스크래치 (0타)' : `+${context.parsed.y}타`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: theme.tick, font: { family: 'Noto Sans KR', weight: 'bold' } },
+                            grid: { display: false }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: theme.tick, stepSize: 1, precision: 0 },
+                            grid: { color: theme.grid }
+                        }
                     }
                 }
             });
