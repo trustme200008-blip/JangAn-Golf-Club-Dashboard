@@ -3459,6 +3459,15 @@
                     if (row.courseName) courseNameByDate[date] = row.courseName;
                 });
                 Object.keys(byDate).forEach(date => crApplyRoundData(date, byDate[date], courseNameByDate[date]));
+
+                // 구글 시트 조회에 성공했다면 시트가 항상 정답입니다. 이 브라우저 로컬 캐시(localStorage)에만
+                // 남아있고 시트에는 없는 회차 — 다른 기기/브라우저에서 이미 삭제됐거나, 시트 연동 전에
+                // 이 브라우저에서만 임시로 저장된 테스트 기록 등 — 는 여기서 함께 정리합니다.
+                // 그렇지 않으면 "관리자 모드에서 삭제해도 이 브라우저에서는 계속 남아있는" 문제가 생깁니다.
+                for (let i = CR_DATES.length - 1; i >= 0; i--) {
+                    if (!byDate[CR_DATES[i]]) crDeleteRoundLocally(i);
+                }
+                if (crSelectedDateIndex >= CR_DATES.length) crSelectedDateIndex = CR_DATES.length - 1;
             } catch (err) {
                 console.warn('구글 시트에서 코스라운드를 불러오지 못해 로컬 데이터로만 표시합니다.', err);
             }
