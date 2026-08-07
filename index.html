@@ -3980,13 +3980,17 @@
             PLAYERS.forEach((player, i) => {
                 const picked = crGetPlayerRecentValidValues(player, metric.key, 5);
                 if (!picked.length) return; // 유효한 기록이 하나도 없는 선수는 게임 순위에서 제외
-                const avg = picked.reduce((a, p) => a + p.val, 0) / picked.length;
+                // 화면에 표시되는 평균은 반올림된 정수이므로, 순위 차이(diff)도 반올림 전
+                // 원본 평균이 아니라 이 "표시되는" 반올림값 기준으로 계산해야 화면상 숫자와
+                // 어긋나지 않습니다 (예: 89.6→90, 94.3→94로 표시되는데 차이를 4.7→5로 계산하면
+                // 화면의 90/94(차이 4)와 배지의 +5가 맞지 않아 보이는 문제를 방지).
+                const avg = Math.round(picked.reduce((a, p) => a + p.val, 0) / picked.length);
                 const oldestIdx = picked[picked.length - 1].idx;
                 standings.push({ player, color: playerLineColor(player, i), avg, roundCount: picked.length, oldestIdx });
             });
             if (!standings.length) return [];
             const minAvg = Math.min(...standings.map(s => s.avg));
-            standings.forEach(s => { s.diff = Math.round(s.avg - minAvg); });
+            standings.forEach(s => { s.diff = s.avg - minAvg; });
             return standings;
         }
 
