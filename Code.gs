@@ -85,6 +85,21 @@ function sheetToObjects(sheet) {
   return rows;
 }
 
+// 구글 시트는 "01/01" 같은 문자열을 셀에 쓰면 스스로 실제 날짜(Date) 타입으로 자동 변환해버리는
+// 경우가 있습니다. 이러면 그 셀 값을 String()으로 그대로 비교했을 때 우리가 보낸 "01/01"과
+// 더 이상 일치하지 않아 수정/삭제 매칭이 실패합니다. 그래서 비교 전에 항상 이 함수로
+// "MM/dd" 형태의 순수 문자열로 정규화한 뒤 비교합니다.
+function normalizeDateCell(value) {
+  if (value instanceof Date) {
+    const tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
+    return Utilities.formatDate(value, tz, 'MM/dd');
+  }
+  const str = String(value).trim();
+  const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) return `${isoMatch[2]}/${isoMatch[3]}`;
+  return str;
+}
+
 // date + player 조합이 이미 있으면 해당 행을 덮어쓰고, 없으면 새 행을 추가합니다.
 // records 안에 시트에 없는 새로운 필드(지표)가 있으면 열을 자동으로 추가합니다.
 // -> 프론트엔드 COURSE_METRICS에 지표를 추가해도 이 스크립트는 수정할 필요가 없습니다.
@@ -96,11 +111,12 @@ function saveRoundRecords(type, date, records) {
   const headers = values[0].map(h => String(h).trim());
   const dateCol = headers.indexOf('date');
   const playerCol = headers.indexOf('player');
+  const normDate = normalizeDateCell(date);
 
   records.forEach(record => {
     let rowIndex = -1;
     for (let i = 1; i < values.length; i++) {
-      if (String(values[i][dateCol]) === String(date) && String(values[i][playerCol]) === String(record.player)) {
+      if (normalizeDateCell(values[i][dateCol]) === normDate && String(values[i][playerCol]) === String(record.player)) {
         rowIndex = i;
         break;
       }
@@ -127,9 +143,10 @@ function deleteRoundRecords(type, date) {
   const headers = values[0].map(h => String(h).trim());
   const dateCol = headers.indexOf('date');
   if (dateCol === -1) return;
+  const normDate = normalizeDateCell(date);
   // 뒤에서부터 삭제해야 앞 행을 지워도 나머지 행 번호가 밀리지 않습니다.
   for (let i = values.length - 1; i >= 1; i--) {
-    if (String(values[i][dateCol]) === String(date)) {
+    if (normalizeDateCell(values[i][dateCol]) === normDate) {
       sheet.deleteRow(i + 1);
     }
   }
