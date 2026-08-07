@@ -107,16 +107,23 @@ function normalizeDateCell(value) {
   return str;
 }
 
-// date 열 전체를 텍스트 서식으로 고정하고, 이미 실제 날짜 타입으로 저장돼버린 셀이 있으면
-// "MM/dd" 순수 문자열로 다시 써서 치유합니다. 저장/삭제할 때마다 먼저 실행해서
-// 예전에 자동 변환된 값이 남아있어도 다음 요청부터는 정상적으로 매칭되게 합니다.
+// date 열을 텍스트 서식으로 고정하고, 이미 실제 날짜 타입으로 저장돼버린 셀이 있으면
+// "MM/dd" 순수 문자열로 다시 써서 치유합니다. 저장/삭제할 때마다 먼저 실행합니다.
+// 주의: 서식은 "현재 데이터가 있는 행"뿐 아니라 시트의 최대 행(sheet.getMaxRows(), 기본 1000행)까지
+// 미리 걸어둬야 합니다. 그래야 이 함수 실행 시점 이후에 새로 append되는 행도(그 시점엔 아직
+// 값이 없어 이 함수가 못 봄) 자동으로 날짜 타입으로 바뀌는 걸 막을 수 있습니다.
 function ensureDateColumnAsText(sheet, headers) {
   const dateCol = headers.indexOf('date');
   if (dateCol === -1) return;
+
+  const totalRows = sheet.getMaxRows() - 1;
+  if (totalRows > 0) {
+    sheet.getRange(2, dateCol + 1, totalRows, 1).setNumberFormat('@');
+  }
+
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return;
   const range = sheet.getRange(2, dateCol + 1, lastRow - 1, 1);
-  range.setNumberFormat('@');
   const cellValues = range.getValues();
   let changed = false;
   const fixed = cellValues.map(row => {
