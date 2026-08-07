@@ -101,7 +101,8 @@ function normalizeDateCell(value) {
     const dd = ('0' + value.getUTCDate()).slice(-2);
     return mm + '/' + dd;
   }
-  const str = String(value).trim();
+  let str = String(value).trim();
+  if (str.charAt(0) === "'") str = str.slice(1); // 혹시 아포스트로피가 값에 그대로 남아있는 경우 방어
   const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (isoMatch) return `${isoMatch[2]}/${isoMatch[3]}`;
   return str;
@@ -159,14 +160,21 @@ function saveRoundRecords(type, date, records) {
         break;
       }
     }
+    // date 앞에 아포스트로피(')를 붙여서 씁니다. setNumberFormat('@')만으로는 Apps Script의
+    // appendRow/setValues가 "01/01" 같은 값을 여전히 실제 날짜로 자동 변환하는 경우가 있어서,
+    // 구글 시트가 확실하게 텍스트로 인식하도록 강제하는 표준 방법입니다.
+    // (읽어올 때는 아포스트로피가 값에 포함되지 않고 순수 문자열만 돌아옵니다.)
     const rowValues = headers.map(h => {
-      if (h === 'date') return date;
+      if (h === 'date') return "'" + date;
       if (h === 'player') return record.player;
       return (record[h] !== undefined && record[h] !== null) ? record[h] : '';
     });
     if (rowIndex === -1) {
       sheet.appendRow(rowValues);
-      values.push(rowValues); // 같은 요청 안에서의 중복 추가 방지
+      // 같은 요청 안에서의 중복 추가 방지용 추적은 아포스트로피 없는 원본 date로 넣어둡니다.
+      const trackingRow = rowValues.slice();
+      trackingRow[dateCol] = date;
+      values.push(trackingRow);
     } else {
       sheet.getRange(rowIndex + 1, 1, 1, headers.length).setValues([rowValues]);
     }
