@@ -3852,27 +3852,32 @@
         }
 
         // ===== 코스라운드 스크래치 게임 (최근 5회차 총타수 평균 기준) =====
-        function crGetGameWindowIndices() {
-            const n = CR_DATES.length;
-            if (n === 0) return [];
-            const start = Math.max(0, n - 5);
-            const idxs = [];
-            for (let i = start; i < n; i++) idxs.push(i);
-            return idxs;
+        // 특정 회차 값이 없거나(null) 0이면 "기록 없음"으로 보고 건너뛰고, 그 이전 회차 값을
+        // 대신 가져와서 유효한 값 5개(가능한 만큼)를 채웁니다.
+        function crGetPlayerRecentValidValues(player, metricKey, count) {
+            ensureCRPlayerData(player);
+            const arr = CR_DATA[player][metricKey] || [];
+            const picked = [];
+            for (let idx = arr.length - 1; idx >= 0 && picked.length < count; idx--) {
+                const v = arr[idx];
+                if (v != null && !isNaN(v) && v !== 0) {
+                    picked.push({ idx, val: v });
+                }
+            }
+            return picked; // 최신 회차 순으로, 최대 count개
         }
 
         function crGetGameStandings() {
             const metric = COURSE_METRICS.find(m => m.key === 'score');
             if (!metric) return [];
-            const idxs = crGetGameWindowIndices();
-            if (!idxs.length) return [];
+            if (CR_DATES.length === 0) return [];
             const standings = [];
             PLAYERS.forEach((player, i) => {
-                ensureCRPlayerData(player);
-                const vals = idxs.map(idx => CR_DATA[player][metric.key][idx]).filter(v => v != null && !isNaN(v));
-                if (!vals.length) return; // 최근 회차 기록이 없는 선수는 게임 순위에서 제외
-                const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-                standings.push({ player, color: playerLineColor(player, i), avg, roundCount: vals.length });
+                const picked = crGetPlayerRecentValidValues(player, metric.key, 5);
+                if (!picked.length) return; // 유효한 기록이 하나도 없는 선수는 게임 순위에서 제외
+                const avg = picked.reduce((a, p) => a + p.val, 0) / picked.length;
+                const oldestIdx = picked[picked.length - 1].idx;
+                standings.push({ player, color: playerLineColor(player, i), avg, roundCount: picked.length, oldestIdx });
             });
             if (!standings.length) return [];
             const minAvg = Math.min(...standings.map(s => s.avg));
@@ -3882,18 +3887,9 @@
 
         function crRenderGameView() {
             const metric = COURSE_METRICS.find(m => m.key === 'score');
-            const idxs = crGetGameWindowIndices();
             const rangeLabelEl = document.getElementById('crGameRangeLabel');
             if (rangeLabelEl) {
-                if (idxs.length > 1) {
-                    const first = CR_DATES[idxs[0]].replace('/', '-');
-                    const last = CR_DATES[idxs[idxs.length - 1]].replace('/', '-');
-                    rangeLabelEl.textContent = `최근 ${idxs.length}회차 (2026-${first} ~ 2026-${last})`;
-                } else if (idxs.length === 1) {
-                    rangeLabelEl.textContent = `최근 1회차 (2026-${CR_DATES[idxs[0]].replace('/', '-')})`;
-                } else {
-                    rangeLabelEl.textContent = '최근 회차';
-                }
+                rangeLabelEl.textContent = '최근 5회차 (0타·미기록 회차는 건너뛰고 이전 회차 값으로 대체)';
             }
 
             const listContainer = document.getElementById('crGameListContainer');
