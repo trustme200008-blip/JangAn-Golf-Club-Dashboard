@@ -1099,11 +1099,12 @@
                     <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2 mb-1">
                         <svg class="inline-block align-[-0.15em] shrink-0 text-emerald-400" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg> 코스라운드 순위
                     </h3>
-                    <p class="text-xs text-slate-400 mb-4">선택된 라운드 일자 기준 동호회원 순위입니다.</p>
+                    <p class="text-xs text-slate-400 mb-4">선택된 라운드 일자 기준 동호회원 순위입니다. 지표별로 <span class="text-slate-300 font-semibold">선택 라운드 · 최근 5회차 평균 · 2026년 평균</span> 세 가지를 함께 보여줍니다.</p>
                     <div class="overflow-x-auto custom-scrollbar">
-                        <table class="w-full text-left border-collapse min-w-[400px]">
+                        <table class="w-full text-left border-collapse min-w-[560px]">
                             <thead>
-                                <tr id="crRankTableHead" class="border-b border-slate-700 text-xs text-slate-400 bg-slate-900/60"></tr>
+                                <tr id="crRankTableGroupHead" class="text-xs text-slate-400 bg-slate-900/60"></tr>
+                                <tr id="crRankTableHead" class="border-b border-slate-700 text-[11px] text-slate-500 bg-slate-900/60"></tr>
                             </thead>
                             <tbody id="crRankTableBody" class="divide-y divide-slate-800 text-sm font-medium">
                                 <!-- JS Populated -->
@@ -3972,6 +3973,18 @@
             return picked; // 최신 회차 순으로, 최대 count개
         }
 
+        // 특정 선수의 해당 지표 "연간 평균"을 계산합니다. 0/미기록 회차는 제외합니다.
+        // 참고: 현재 데이터 모델은 날짜를 "MM/DD" 형식(연도 없음)으로만 저장하고 있어
+        // 실질적으로 전체 기록 = 2026년 기록입니다. 추후 연도 데이터가 별도로 쌓이게 되면
+        // 이 함수를 연도 필터링 로직으로 교체하면 됩니다.
+        function crGetPlayerYearAvg(player, metricKey) {
+            ensureCRPlayerData(player);
+            const arr = CR_DATA[player][metricKey] || [];
+            const valid = arr.filter(v => v != null && !isNaN(v) && v !== 0);
+            if (!valid.length) return null;
+            return valid.reduce((a, v) => a + v, 0) / valid.length;
+        }
+
         function crGetGameStandings() {
             const metric = COURSE_METRICS.find(m => m.key === 'score');
             if (!metric) return [];
@@ -4142,29 +4155,44 @@
         function crRenderRankView() {
             const idx = crSelectedDateIndex;
             const primary = COURSE_METRICS[0];
+            // 0은 "해당 회차 미기록/불참"으로 취급합니다 (게임 탭의 crGetPlayerRecentValidValues와 동일한 규칙).
             const rows = PLAYERS.map(player => {
                 ensureCRPlayerData(player);
                 return { player, val: CR_DATA[player][primary.key][idx] };
-            }).filter(r => r.val != null);
+            }).filter(r => r.val != null && r.val !== 0);
 
             rows.sort((a, b) => primary.better === 'low' ? (a.val - b.val) : (b.val - a.val));
 
-            document.getElementById('crRankTableHead').innerHTML = `<th class="p-3">순위</th><th class="p-3">플레이어</th>` +
-                COURSE_METRICS.map(m => `<th class="p-3 text-center">${m.label}</th>`).join('');
+            // 지표별로 "선택 라운드 값 / 최근 5회차 평균 / 2026년 평균" 3열을 함께 보여줍니다.
+            document.getElementById('crRankTableGroupHead').innerHTML =
+                `<th class="p-3 whitespace-nowrap" rowspan="2">순위</th><th class="p-3 whitespace-nowrap" rowspan="2">플레이어</th>` +
+                COURSE_METRICS.map(m => `<th class="p-2 text-center border-l border-slate-800 whitespace-nowrap" colspan="3">${m.label}${m.unit ? `(${m.unit})` : ''}</th>`).join('');
+            document.getElementById('crRankTableHead').innerHTML =
+                COURSE_METRICS.map(() => `
+                    <th class="p-2 text-center font-normal border-l border-slate-800 whitespace-nowrap">선택 라운드</th>
+                    <th class="p-2 text-center font-normal whitespace-nowrap">최근 5회 평균</th>
+                    <th class="p-2 text-center font-normal whitespace-nowrap">2026년 평균</th>
+                `).join('');
 
             const tbody = document.getElementById('crRankTableBody');
             if (!rows.length) {
-                tbody.innerHTML = `<tr><td colspan="${2 + COURSE_METRICS.length}" class="p-4 text-center text-slate-400">선택한 라운드에 기록이 없습니다.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="${2 + COURSE_METRICS.length * 3}" class="p-4 text-center text-slate-400">선택한 라운드에 기록이 없습니다.</td></tr>`;
                 return;
             }
             tbody.innerHTML = rows.map((r, i) => {
                 const isSelf = r.player === selectedPlayer;
                 return `<tr class="${isSelf ? 'bg-emerald-900/20' : ''} hover:bg-slate-800/40 transition">
-                    <td class="p-3 font-bold ${i === 0 ? 'text-emerald-400' : 'text-slate-300'}">${i + 1}</td>
-                    <td class="p-3 font-bold ${isSelf ? 'text-emerald-300' : 'text-white'}">${r.player}</td>
+                    <td class="p-3 font-bold whitespace-nowrap ${i === 0 ? 'text-emerald-400' : 'text-slate-300'}">${i + 1}</td>
+                    <td class="p-3 font-bold whitespace-nowrap ${isSelf ? 'text-emerald-300' : 'text-white'}">${r.player}</td>
                     ${COURSE_METRICS.map(m => {
-                        const v = CR_DATA[r.player][m.key][idx];
-                        return `<td class="p-3 text-center">${v != null ? v.toFixed(m.decimals) : '-'}</td>`;
+                        const fmt = v => v != null && !isNaN(v) && v !== 0 ? v.toFixed(m.decimals) : '-';
+                        const selectedVal = CR_DATA[r.player][m.key][idx];
+                        const recentPicked = crGetPlayerRecentValidValues(r.player, m.key, 5);
+                        const recentAvg = recentPicked.length ? recentPicked.reduce((a, p) => a + p.val, 0) / recentPicked.length : null;
+                        const yearAvg = crGetPlayerYearAvg(r.player, m.key);
+                        return `<td class="p-3 text-center border-l border-slate-800 font-bold whitespace-nowrap">${fmt(selectedVal)}</td>
+                                <td class="p-3 text-center text-slate-300 whitespace-nowrap">${fmt(recentAvg)}</td>
+                                <td class="p-3 text-center text-slate-400 whitespace-nowrap">${fmt(yearAvg)}</td>`;
                     }).join('')}
                 </tr>`;
             }).join('');
