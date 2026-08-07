@@ -66,6 +66,9 @@ function getOrCreateSheet(type) {
     sheet = ss.insertSheet(name);
     const headers = DEFAULT_HEADERS[type] || DEFAULT_HEADERS.screenGolf;
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    // date 열은 항상 "일반 텍스트" 서식으로 고정해서, 구글 시트가 "01/01" 같은 값을
+    // 실제 날짜 타입으로 자동 변환해버리는 것을 애초에 막습니다.
+    sheet.getRange(2, 1, Math.max(sheet.getMaxRows() - 1, 1), 1).setNumberFormat('@');
   }
   return sheet;
 }
@@ -89,15 +92,42 @@ function sheetToObjects(sheet) {
 // 경우가 있습니다. 이러면 그 셀 값을 String()으로 그대로 비교했을 때 우리가 보낸 "01/01"과
 // 더 이상 일치하지 않아 수정/삭제 매칭이 실패합니다. 그래서 비교 전에 항상 이 함수로
 // "MM/dd" 형태의 순수 문자열로 정규화한 뒤 비교합니다.
+// (아래 ensureDateColumnAsText가 date 열을 텍스트로 고정/치유하므로 Date 분기는
+// 혹시 남아있을 수 있는 기존 값을 위한 방어 코드입니다. 프론트엔드의 normalizeSheetDate와
+// 동일하게 UTC 기준으로 월/일을 추출해 서로 어긋나지 않게 맞춥니다.)
 function normalizeDateCell(value) {
   if (value instanceof Date) {
-    const tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
-    return Utilities.formatDate(value, tz, 'MM/dd');
+    const mm = ('0' + (value.getUTCMonth() + 1)).slice(-2);
+    const dd = ('0' + value.getUTCDate()).slice(-2);
+    return mm + '/' + dd;
   }
   const str = String(value).trim();
   const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (isoMatch) return `${isoMatch[2]}/${isoMatch[3]}`;
   return str;
+}
+
+// date 열 전체를 텍스트 서식으로 고정하고, 이미 실제 날짜 타입으로 저장돼버린 셀이 있으면
+// "MM/dd" 순수 문자열로 다시 써서 치유합니다. 저장/삭제할 때마다 먼저 실행해서
+// 예전에 자동 변환된 값이 남아있어도 다음 요청부터는 정상적으로 매칭되게 합니다.
+function ensureDateColumnAsText(sheet, headers) {
+  const dateCol = headers.indexOf('date');
+  if (dateCol === -1) return;
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return;
+  const range = sheet.getRange(2, dateCol + 1, lastRow - 1, 1);
+  range.setNumberFormat('@');
+  const cellValues = range.getValues();
+  let changed = false;
+  const fixed = cellValues.map(row => {
+    const v = row[0];
+    if (v instanceof Date) {
+      changed = true;
+      return [normalizeDateCell(v)];
+    }
+    return [v];
+  });
+  if (changed) range.setValues(fixed);
 }
 
 // date + player 조합이 이미 있으면 해당 행을 덮어쓰고, 없으면 새 행을 추가합니다.
@@ -106,6 +136,7 @@ function normalizeDateCell(value) {
 function saveRoundRecords(type, date, records) {
   const sheet = getOrCreateSheet(type);
   ensureColumns(sheet, records);
+  ensureDateColumnAsText(sheet, sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim()));
 
   const values = sheet.getDataRange().getValues();
   const headers = values[0].map(h => String(h).trim());
@@ -138,9 +169,12 @@ function saveRoundRecords(type, date, records) {
 // 특정 날짜(date)에 해당하는 모든 선수의 행을 시트에서 삭제합니다. 되돌릴 수 없습니다.
 function deleteRoundRecords(type, date) {
   const sheet = getOrCreateSheet(type);
-  const values = sheet.getDataRange().getValues();
+  let values = sheet.getDataRange().getValues();
   if (values.length < 2) return;
-  const headers = values[0].map(h => String(h).trim());
+  let headers = values[0].map(h => String(h).trim());
+  ensureDateColumnAsText(sheet, headers);
+  values = sheet.getDataRange().getValues(); // 치유 후 값 다시 읽기
+  headers = values[0].map(h => String(h).trim());
   const dateCol = headers.indexOf('date');
   if (dateCol === -1) return;
   const normDate = normalizeDateCell(date);
