@@ -48,7 +48,9 @@ function doPost(e) {
   const body = JSON.parse(e.postData.contents);
   const type = body.type || 'screenGolf';
 
-  if (type === 'players') {
+  if (body.action === 'delete') {
+    deleteRoundRecords(type, body.date);
+  } else if (type === 'players') {
     savePlayers(body.players || []);
   } else {
     saveRoundRecords(type, body.date, body.records || []);
@@ -115,6 +117,22 @@ function saveRoundRecords(type, date, records) {
       sheet.getRange(rowIndex + 1, 1, 1, headers.length).setValues([rowValues]);
     }
   });
+}
+
+// 특정 날짜(date)에 해당하는 모든 선수의 행을 시트에서 삭제합니다. 되돌릴 수 없습니다.
+function deleteRoundRecords(type, date) {
+  const sheet = getOrCreateSheet(type);
+  const values = sheet.getDataRange().getValues();
+  if (values.length < 2) return;
+  const headers = values[0].map(h => String(h).trim());
+  const dateCol = headers.indexOf('date');
+  if (dateCol === -1) return;
+  // 뒤에서부터 삭제해야 앞 행을 지워도 나머지 행 번호가 밀리지 않습니다.
+  for (let i = values.length - 1; i >= 1; i--) {
+    if (String(values[i][dateCol]) === String(date)) {
+      sheet.deleteRow(i + 1);
+    }
+  }
 }
 
 // records에는 있는데 시트 헤더에는 없는 필드(새 지표)가 있으면 새 열로 추가합니다.

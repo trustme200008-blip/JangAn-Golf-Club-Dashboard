@@ -24,6 +24,10 @@
         html.light .cr-suggest-box { background-color: #ffffff !important; border-color: #cbd5e1 !important; }
         .cr-suggest-item:hover, .cr-suggest-item:focus { background-color: rgba(16, 185, 129, 0.15); color: #6ee7b7; }
         html.light .cr-suggest-item:hover, html.light .cr-suggest-item:focus { background-color: rgba(5, 150, 105, 0.12); color: #047857; }
+        .btn-danger { background-color: rgba(244, 63, 94, 0.12); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.3); transition: background-color 0.15s ease, color 0.15s ease; }
+        .btn-danger:hover { background-color: rgba(244, 63, 94, 0.22); color: #fecdd3; }
+        html.light .btn-danger { background-color: rgba(225, 29, 72, 0.08); color: #be123c; border-color: rgba(225, 29, 72, 0.25); }
+        html.light .btn-danger:hover { background-color: rgba(225, 29, 72, 0.15); color: #9f1239; }
 
         /* ===== 관리자/사용자 모드 ===== */
         body.user-mode .admin-only { display: none !important; }
@@ -1218,13 +1222,18 @@
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="flex justify-end gap-2.5 pt-3 border-t border-slate-800 sticky bottom-0 bg-slate-900 pb-1">
+                <div class="flex justify-between items-center gap-2.5 pt-3 border-t border-slate-800 sticky bottom-0 bg-slate-900 pb-1">
+                    <button type="button" id="deleteRoundBtn" class="btn-danger px-4 py-2.5 text-xs font-bold rounded-xl transition min-h-[40px]">
+                        <svg class="inline-block align-[-0.15em] shrink-0 mr-1" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> 삭제
+                    </button>
+                    <div class="flex gap-2.5">
                     <button type="button" id="cancelEditModalBtn" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition min-h-[40px]">
                         취소
                     </button>
                     <button type="submit" class="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl transition shadow-lg shadow-emerald-500/20 min-h-[40px]">
                         <svg class="inline-block align-[-0.15em] shrink-0 mr-1" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> 수정 저장
                     </button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -1326,13 +1335,18 @@
                     </div>
                 </div>
 
-                <div class="flex justify-end gap-2.5 pt-3 border-t border-slate-800 sticky bottom-0 bg-slate-900 pb-1">
+                <div class="flex justify-between items-center gap-2.5 pt-3 border-t border-slate-800 sticky bottom-0 bg-slate-900 pb-1">
+                    <button type="button" id="crDeleteRoundBtn" class="btn-danger px-4 py-2.5 text-xs font-bold rounded-xl transition min-h-[40px]">
+                        <svg class="inline-block align-[-0.15em] shrink-0 mr-1" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> 삭제
+                    </button>
+                    <div class="flex gap-2.5">
                     <button type="button" id="crCancelEditModalBtn" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition min-h-[40px]">
                         취소
                     </button>
                     <button type="submit" class="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl transition shadow-lg shadow-emerald-500/20 min-h-[40px]">
                         <svg class="inline-block align-[-0.15em] shrink-0 mr-1" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> 수정 저장
                     </button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -1824,6 +1838,20 @@
             return dateIdx;
         }
 
+        // dateIdx 회차를 DATES/GOLF_DATA에서 완전히 제거합니다 (되돌릴 수 없음).
+        function deleteRoundLocally(dateIdx) {
+            if (dateIdx < 0 || dateIdx >= DATES.length) return null;
+            const date = DATES[dateIdx];
+            DATES.splice(dateIdx, 1);
+            PLAYERS.forEach(player => {
+                if (!GOLF_DATA[player]) return;
+                ['gHandicap', 'fir', 'gir', 'putt', 'distance'].forEach(m => {
+                    if (GOLF_DATA[player][m]) GOLF_DATA[player][m].splice(dateIdx, 1);
+                });
+            });
+            return date;
+        }
+
         // ===== 구글 시트 백엔드 연동 =====
         // 아래 SHEET_API_URL에 Apps Script 배포 후 나오는 웹 앱 URL을 붙여넣으면
         // 라운드 추가 시 구글 시트에 저장되고, 접속하는 모든 플레이어가 같은 데이터를 보게 됩니다.
@@ -1889,6 +1917,19 @@
                 });
             } catch (err) {
                 console.warn('구글 시트에 라운드 저장을 실패해 이 브라우저에만 저장됩니다.', err);
+            }
+        }
+
+        async function deleteRoundFromSheet(formattedDate) {
+            if (!hasSheetBackend()) return;
+            try {
+                await fetch(SHEET_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ type: 'screenGolf', action: 'delete', date: formattedDate })
+                });
+            } catch (err) {
+                console.warn('구글 시트에서 라운드 삭제를 실패해 이 브라우저에만 반영됩니다.', err);
             }
         }
 
@@ -2029,6 +2070,23 @@
 
                 // 구글 시트 연동이 설정돼 있으면 함께 저장 (다른 플레이어에게도 보이도록)
                 await saveRoundToSheet(formattedDate, dataByPlayer);
+            });
+
+            // 라운드 삭제 (관리자 전용, 되돌릴 수 없음)
+            document.getElementById('deleteRoundBtn').addEventListener('click', async () => {
+                const dateIdx = parseInt(editRoundDateSelect.value, 10);
+                if (isNaN(dateIdx) || !DATES[dateIdx]) return;
+                const formattedDate = DATES[dateIdx];
+                if (!confirm(`2026-${formattedDate.replace('/', '-')} 라운드 기록을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
+
+                deleteRoundLocally(dateIdx);
+                if (selectedDateIndex >= DATES.length) selectedDateIndex = DATES.length - 1;
+                if (selectedDateIndex < 0) selectedDateIndex = 0;
+                renderDateDropdown();
+                renderAll();
+                closeEditModal();
+
+                await deleteRoundFromSheet(formattedDate);
             });
         }
 
@@ -3348,6 +3406,22 @@
             return dateIdx;
         }
 
+        // dateIdx 회차를 CR_DATES/CR_DATA/CR_COURSE_NAMES에서 완전히 제거합니다 (되돌릴 수 없음).
+        function crDeleteRoundLocally(dateIdx) {
+            if (dateIdx < 0 || dateIdx >= CR_DATES.length) return null;
+            const date = CR_DATES[dateIdx];
+            CR_DATES.splice(dateIdx, 1);
+            CR_COURSE_NAMES.splice(dateIdx, 1);
+            PLAYERS.forEach(player => {
+                ensureCRPlayerData(player);
+                COURSE_METRICS.forEach(m => {
+                    if (CR_DATA[player][m.key]) CR_DATA[player][m.key].splice(dateIdx, 1);
+                });
+            });
+            crPersistLocalCache();
+            return date;
+        }
+
         // ===== 구글 시트 백엔드 연동 (코스라운드) =====
         async function loadCourseRoundsFromSheet() {
             if (!hasSheetBackend()) return;
@@ -3383,6 +3457,19 @@
                 });
             } catch (err) {
                 console.warn('구글 시트에 코스라운드 저장을 실패해 이 브라우저에만 저장됩니다.', err);
+            }
+        }
+
+        async function deleteCourseRoundFromSheet(formattedDate) {
+            if (!hasSheetBackend()) return;
+            try {
+                await fetch(SHEET_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ type: 'courseRounds', action: 'delete', date: formattedDate })
+                });
+            } catch (err) {
+                console.warn('구글 시트에서 코스라운드 삭제를 실패해 이 브라우저에만 반영됩니다.', err);
             }
         }
 
@@ -3610,6 +3697,24 @@
                 crRenderAll();
                 closeEditModal();
                 await saveCourseRoundToSheet(formattedDate, dataByPlayer, courseName);
+            });
+
+            // 코스라운드 삭제 (관리자 전용, 되돌릴 수 없음)
+            document.getElementById('crDeleteRoundBtn').addEventListener('click', async () => {
+                const dateIdx = parseInt(editDateSelect.value, 10);
+                if (isNaN(dateIdx) || !CR_DATES[dateIdx]) return;
+                const formattedDate = CR_DATES[dateIdx];
+                const courseName = CR_COURSE_NAMES[dateIdx];
+                const label = `2026-${formattedDate.replace('/', '-')}${courseName ? ' · ' + courseName : ''}`;
+                if (!confirm(`${label} 코스라운드 기록을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
+
+                crDeleteRoundLocally(dateIdx);
+                if (crSelectedDateIndex >= CR_DATES.length) crSelectedDateIndex = CR_DATES.length - 1;
+                if (crSelectedDateIndex < 0) crSelectedDateIndex = 0;
+                crRenderAll();
+                closeEditModal();
+
+                await deleteCourseRoundFromSheet(formattedDate);
             });
         }
 
