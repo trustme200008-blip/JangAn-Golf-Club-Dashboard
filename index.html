@@ -4156,12 +4156,22 @@
             const idx = crSelectedDateIndex;
             const primary = COURSE_METRICS[0];
             // 0은 "해당 회차 미기록/불참"으로 취급합니다 (게임 탭의 crGetPlayerRecentValidValues와 동일한 규칙).
+            // 다만 그날 불참한 선수라도 최근 5회차/2026년 평균은 계속 볼 수 있어야 하므로,
+            // 표에서 행 자체를 빼지 않고 "선택 라운드" 값과 순위만 없는 것으로 표시합니다.
             const rows = PLAYERS.map(player => {
                 ensureCRPlayerData(player);
-                return { player, val: CR_DATA[player][primary.key][idx] };
-            }).filter(r => r.val != null && r.val !== 0);
+                const raw = CR_DATA[player][primary.key][idx];
+                const val = (raw != null && !isNaN(raw) && raw !== 0) ? raw : null;
+                return { player, val };
+            });
 
-            rows.sort((a, b) => primary.better === 'low' ? (a.val - b.val) : (b.val - a.val));
+            // 선택 라운드에 유효 기록이 있는 선수는 점수순으로 먼저, 그날 기록이 없는 선수는 뒤로.
+            rows.sort((a, b) => {
+                if (a.val == null && b.val == null) return 0;
+                if (a.val == null) return 1;
+                if (b.val == null) return -1;
+                return primary.better === 'low' ? (a.val - b.val) : (b.val - a.val);
+            });
 
             // 지표별로 "선택 라운드 값 / 최근 5회차 평균 / 2026년 평균" 3열을 함께 보여줍니다.
             document.getElementById('crRankTableGroupHead').innerHTML =
@@ -4175,24 +4185,30 @@
                 `).join('');
 
             const tbody = document.getElementById('crRankTableBody');
-            if (!rows.length) {
-                tbody.innerHTML = `<tr><td colspan="${2 + COURSE_METRICS.length * 3}" class="p-4 text-center text-slate-400">선택한 라운드에 기록이 없습니다.</td></tr>`;
+            const fmt = (m, v) => v != null && !isNaN(v) && v !== 0 ? v.toFixed(m.decimals) : '-';
+            const hasAnyData = rows.some(r => COURSE_METRICS.some(m =>
+                CR_DATA[r.player][m.key][idx] || crGetPlayerRecentValidValues(r.player, m.key, 5).length || crGetPlayerYearAvg(r.player, m.key) != null
+            ));
+            if (!rows.length || !hasAnyData) {
+                tbody.innerHTML = `<tr><td colspan="${2 + COURSE_METRICS.length * 3}" class="p-4 text-center text-slate-400">기록이 없습니다.</td></tr>`;
                 return;
             }
-            tbody.innerHTML = rows.map((r, i) => {
+            let rankCounter = 0;
+            tbody.innerHTML = rows.map((r) => {
+                const hasRank = r.val != null;
+                if (hasRank) rankCounter++;
                 const isSelf = r.player === selectedPlayer;
-                return `<tr class="${isSelf ? 'bg-emerald-900/20' : ''} hover:bg-slate-800/40 transition">
-                    <td class="p-3 font-bold whitespace-nowrap ${i === 0 ? 'text-emerald-400' : 'text-slate-300'}">${i + 1}</td>
+                return `<tr class="${isSelf ? 'bg-emerald-900/20' : ''} ${hasRank ? '' : 'opacity-60'} hover:bg-slate-800/40 transition">
+                    <td class="p-3 font-bold whitespace-nowrap ${hasRank && rankCounter === 1 ? 'text-emerald-400' : 'text-slate-300'}">${hasRank ? rankCounter : '-'}</td>
                     <td class="p-3 font-bold whitespace-nowrap ${isSelf ? 'text-emerald-300' : 'text-white'}">${r.player}</td>
                     ${COURSE_METRICS.map(m => {
-                        const fmt = v => v != null && !isNaN(v) && v !== 0 ? v.toFixed(m.decimals) : '-';
-                        const selectedVal = CR_DATA[r.player][m.key][idx];
+                        const selectedVal = m.key === primary.key ? r.val : CR_DATA[r.player][m.key][idx];
                         const recentPicked = crGetPlayerRecentValidValues(r.player, m.key, 5);
                         const recentAvg = recentPicked.length ? recentPicked.reduce((a, p) => a + p.val, 0) / recentPicked.length : null;
                         const yearAvg = crGetPlayerYearAvg(r.player, m.key);
-                        return `<td class="p-3 text-center border-l border-slate-800 font-bold whitespace-nowrap">${fmt(selectedVal)}</td>
-                                <td class="p-3 text-center text-slate-300 whitespace-nowrap">${fmt(recentAvg)}</td>
-                                <td class="p-3 text-center text-slate-400 whitespace-nowrap">${fmt(yearAvg)}</td>`;
+                        return `<td class="p-3 text-center border-l border-slate-800 font-bold whitespace-nowrap">${fmt(m, selectedVal)}</td>
+                                <td class="p-3 text-center text-slate-300 whitespace-nowrap">${fmt(m, recentAvg)}</td>
+                                <td class="p-3 text-center text-slate-400 whitespace-nowrap">${fmt(m, yearAvg)}</td>`;
                     }).join('')}
                 </tr>`;
             }).join('');
