@@ -1099,7 +1099,7 @@
                     <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2 mb-1">
                         <svg class="inline-block align-[-0.15em] shrink-0 text-emerald-400" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg> 코스라운드 순위
                     </h3>
-                    <p class="text-xs text-slate-400 mb-4">선택된 라운드 일자 기준 동호회원 순위입니다. 지표별로 <span class="text-slate-300 font-semibold">선택 라운드 · 최근 5회차 평균 · 2026년 평균</span> 세 가지를 함께 보여줍니다.</p>
+                    <p class="text-xs text-slate-400 mb-4"><span class="text-slate-300 font-semibold">2026년 평균</span> 기준 동호회원 순위입니다. 지표별로 <span class="text-slate-300 font-semibold">선택 라운드 · 최근 5회차 평균 · 2026년 평균</span> 세 가지를 함께 보여줍니다.</p>
                     <div class="overflow-x-auto custom-scrollbar">
                         <table class="w-full text-left border-collapse min-w-[560px]">
                             <thead>
@@ -4155,17 +4155,17 @@
         function crRenderRankView() {
             const idx = crSelectedDateIndex;
             const primary = COURSE_METRICS[0];
-            // 0은 "해당 회차 미기록/불참"으로 취급합니다 (게임 탭의 crGetPlayerRecentValidValues와 동일한 규칙).
-            // 다만 그날 불참한 선수라도 최근 5회차/2026년 평균은 계속 볼 수 있어야 하므로,
-            // 표에서 행 자체를 빼지 않고 "선택 라운드" 값과 순위만 없는 것으로 표시합니다.
+            // 순위는 "2026년 평균"(연간 누적 평균) 기준입니다. 0/미기록 회차는
+            // crGetPlayerYearAvg 내부에서 이미 제외하고 계산됩니다.
+            // 2026년 평균 기록이 아예 없는 선수(한 번도 안 뛴 경우)는 표에서 빼지 않고
+            // 순위 없이("-") 목록 아래에 표시하며, 그래도 선택 라운드/최근5회 값이 있으면 함께 보여줍니다.
             const rows = PLAYERS.map(player => {
                 ensureCRPlayerData(player);
-                const raw = CR_DATA[player][primary.key][idx];
-                const val = (raw != null && !isNaN(raw) && raw !== 0) ? raw : null;
+                const val = crGetPlayerYearAvg(player, primary.key);
                 return { player, val };
             });
 
-            // 선택 라운드에 유효 기록이 있는 선수는 점수순으로 먼저, 그날 기록이 없는 선수는 뒤로.
+            // 2026년 평균이 있는 선수는 그 값 기준으로 정렬, 없는 선수는 뒤로.
             rows.sort((a, b) => {
                 if (a.val == null && b.val == null) return 0;
                 if (a.val == null) return 1;
@@ -4202,10 +4202,11 @@
                     <td class="p-3 font-bold whitespace-nowrap ${hasRank && rankCounter === 1 ? 'text-emerald-400' : 'text-slate-300'}">${hasRank ? rankCounter : '-'}</td>
                     <td class="p-3 font-bold whitespace-nowrap ${isSelf ? 'text-emerald-300' : 'text-white'}">${r.player}</td>
                     ${COURSE_METRICS.map(m => {
-                        const selectedVal = m.key === primary.key ? r.val : CR_DATA[r.player][m.key][idx];
+                        const rawSelected = CR_DATA[r.player][m.key][idx];
+                        const selectedVal = (rawSelected != null && !isNaN(rawSelected) && rawSelected !== 0) ? rawSelected : null;
                         const recentPicked = crGetPlayerRecentValidValues(r.player, m.key, 5);
                         const recentAvg = recentPicked.length ? recentPicked.reduce((a, p) => a + p.val, 0) / recentPicked.length : null;
-                        const yearAvg = crGetPlayerYearAvg(r.player, m.key);
+                        const yearAvg = m.key === primary.key ? r.val : crGetPlayerYearAvg(r.player, m.key);
                         return `<td class="p-3 text-center border-l border-slate-800 font-bold whitespace-nowrap">${fmt(m, selectedVal)}</td>
                                 <td class="p-3 text-center text-slate-300 whitespace-nowrap">${fmt(m, recentAvg)}</td>
                                 <td class="p-3 text-center text-slate-400 whitespace-nowrap">${fmt(m, yearAvg)}</td>`;
