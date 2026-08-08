@@ -3818,8 +3818,8 @@
             const avgLabelEl = document.getElementById('crPlayerAvgLabel');
             if (primary) {
                 if (avgLabelEl) avgLabelEl.textContent = `누적 평균 ${primary.label}`;
-                const vals = (p[primary.key] || []).filter(v => v != null);
-                const avg = vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+                // 0(미기록/불참)은 제외하고 평균을 냅니다 — 게임 탭/순위 탭과 동일한 규칙(crGetPlayerYearAvg).
+                const avg = crGetPlayerYearAvg(selectedPlayer, primary.key);
                 document.getElementById('crPlayerAvgHandicap').textContent = avg != null ? avg.toFixed(primary.decimals) + (primary.unit || '') : '-';
             } else {
                 if (avgLabelEl) avgLabelEl.textContent = '누적 평균';
