@@ -14,9 +14,11 @@
  * 5. 배포 목록에서 연필(편집) 아이콘 클릭 → "버전"을 "새 버전"으로 선택 → "배포".
  *    (⚠️ "새 배포"가 아니라 기존 배포를 "편집"해야 웹앱 URL이 그대로 유지됩니다.)
  * 6. 완료되면 시트 파일에 아래 탭들이 사용됩니다:
- *    - Rounds       : date, player, gHandicap, fir, gir, putt, distance  (기존 스크린골프 데이터 탭)
- *    - CourseRounds : date, player, handicap  (지표를 추가하면 열이 자동으로 늘어납니다. 신규 생성)
- *    - Players      : name  (신규 생성)
+ *    - Rounds         : date, player, gHandicap, fir, gir, putt, distance  (기존 스크린골프 데이터 탭)
+ *    - CourseRounds   : date, player, handicap  (지표를 추가하면 열이 자동으로 늘어납니다. 신규 생성)
+ *    - Players        : name  (신규 생성)
+ *    - ScreenScoreCard: id, date, player, course, score  (스크린골프 스코어 카드, 신규 생성.
+ *      날짜는 "YYYY-MM-DD" 전체 날짜를 그대로 저장합니다 — 다른 탭의 "MM/DD"와 다르니 주의)
  *
  * 스크린골프 기존 데이터 탭 이름은 SHEET_NAMES.screenGolf 값과 반드시 일치해야 합니다.
  * (장안 골프 동호회 시트 기준 실제 탭 이름은 "Rounds" 입니다 — 이미 반영되어 있습니다.)
@@ -28,13 +30,15 @@
 const SHEET_NAMES = {
   screenGolf: 'Rounds',
   courseRounds: 'CourseRounds',
-  players: 'Players'
+  players: 'Players',
+  screenScoreCard: 'ScreenScoreCard'
 };
 
 const DEFAULT_HEADERS = {
   screenGolf: ['date', 'player', 'gHandicap', 'fir', 'gir', 'putt', 'distance'],
   courseRounds: ['date', 'player', 'handicap'],
-  players: ['name']
+  players: ['name'],
+  screenScoreCard: ['id', 'date', 'player', 'course', 'score']
 };
 
 function doGet(e) {
@@ -49,9 +53,15 @@ function doPost(e) {
   const type = body.type || 'screenGolf';
 
   if (body.action === 'delete') {
-    deleteRoundRecords(type, body.date);
+    if (type === 'screenScoreCard') {
+      deleteScoreCardRecord(body.id);
+    } else {
+      deleteRoundRecords(type, body.date);
+    }
   } else if (type === 'players') {
     savePlayers(body.players || []);
+  } else if (type === 'screenScoreCard') {
+    appendScoreCardRecords(body.records || []);
   } else {
     saveRoundRecords(type, body.date, body.records || []);
   }
@@ -68,7 +78,12 @@ function getOrCreateSheet(type) {
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
     // date 열은 항상 "일반 텍스트" 서식으로 고정해서, 구글 시트가 "01/01" 같은 값을
     // 실제 날짜 타입으로 자동 변환해버리는 것을 애초에 막습니다.
-    sheet.getRange(2, 1, Math.max(sheet.getMaxRows() - 1, 1), 1).setNumberFormat('@');
+    // (date 열이 항상 1번 열이라고 가정하지 않고 헤더에서 실제 위치를 찾습니다 —
+    // ScreenScoreCard는 id가 1열, date가 2열입니다.)
+    const dateColIdx = headers.indexOf('date');
+    if (dateColIdx !== -1) {
+      sheet.getRange(2, dateColIdx + 1, Math.max(sheet.getMaxRows() - 1, 1), 1).setNumberFormat('@');
+    }
   }
   return sheet;
 }
@@ -109,11 +124,14 @@ function normalizeDateCell(value) {
 }
 
 // date 열을 텍스트 서식으로 고정하고, 이미 실제 날짜 타입으로 저장돼버린 셀이 있으면
-// "MM/dd" 순수 문자열로 다시 써서 치유합니다. 저장/삭제할 때마다 먼저 실행합니다.
+// 순수 문자열로 다시 써서 치유합니다. 저장/삭제할 때마다 먼저 실행합니다.
 // 주의: 서식은 "현재 데이터가 있는 행"뿐 아니라 시트의 최대 행(sheet.getMaxRows(), 기본 1000행)까지
 // 미리 걸어둬야 합니다. 그래야 이 함수 실행 시점 이후에 새로 append되는 행도(그 시점엔 아직
 // 값이 없어 이 함수가 못 봄) 자동으로 날짜 타입으로 바뀌는 걸 막을 수 있습니다.
-function ensureDateColumnAsText(sheet, headers) {
+// normalizeFn은 기본값 normalizeDateCell("MM/dd")이며, ScreenScoreCard처럼 연도까지 보존해야
+// 하는 시트는 normalizeFullDateCell을 넘겨줍니다.
+function ensureDateColumnAsText(sheet, headers, normalizeFn) {
+  normalizeFn = normalizeFn || normalizeDateCell;
   const dateCol = headers.indexOf('date');
   if (dateCol === -1) return;
 
@@ -131,11 +149,26 @@ function ensureDateColumnAsText(sheet, headers) {
     const v = row[0];
     if (v instanceof Date) {
       changed = true;
-      return [normalizeDateCell(v)];
+      return [normalizeFn(v)];
     }
     return [v];
   });
   if (changed) range.setValues(fixed);
+}
+
+// normalizeDateCell과 같은 목적이지만 "YYYY-MM-DD" 전체 날짜(연도 포함)를 보존합니다.
+// ScreenScoreCard는 스크린골프 Rounds/CourseRounds와 달리 연도가 다른 기록이 섞일 수 있어
+// (스코어 카드에 여러 해가 쌓일 수 있음) 연도를 버리는 normalizeDateCell을 쓰면 안 됩니다.
+function normalizeFullDateCell(value) {
+  if (value instanceof Date) {
+    const yyyy = value.getUTCFullYear();
+    const mm = ('0' + (value.getUTCMonth() + 1)).slice(-2);
+    const dd = ('0' + value.getUTCDate()).slice(-2);
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  let str = String(value).trim();
+  if (str.charAt(0) === "'") str = str.slice(1);
+  return str;
 }
 
 // date + player 조합이 이미 있으면 해당 행을 덮어쓰고, 없으면 새 행을 추가합니다.
@@ -196,6 +229,37 @@ function deleteRoundRecords(type, date) {
   // 뒤에서부터 삭제해야 앞 행을 지워도 나머지 행 번호가 밀리지 않습니다.
   for (let i = values.length - 1; i >= 1; i--) {
     if (normalizeDateCell(values[i][dateCol]) === normDate) {
+      sheet.deleteRow(i + 1);
+    }
+  }
+}
+
+// 스크린골프 스코어 카드: date+player가 유일하지 않으므로(같은 날 여러 회 플레이 가능) 항상
+// 새 행으로 추가만 합니다(덮어쓰기 없음). 각 record는 프론트엔드에서 만든 고유 id를 포함합니다.
+function appendScoreCardRecords(records) {
+  const sheet = getOrCreateSheet('screenScoreCard');
+  const headers = DEFAULT_HEADERS.screenScoreCard;
+  ensureDateColumnAsText(sheet, headers, normalizeFullDateCell);
+
+  records.forEach(record => {
+    const rowValues = headers.map(h => {
+      if (h === 'date') return "'" + record.date; // 연도까지 텍스트로 강제 (apostrophe-prefix)
+      return (record[h] !== undefined && record[h] !== null) ? record[h] : '';
+    });
+    sheet.appendRow(rowValues);
+  });
+}
+
+// id로 스코어 카드 행 하나를 삭제합니다. 되돌릴 수 없습니다.
+function deleteScoreCardRecord(id) {
+  const sheet = getOrCreateSheet('screenScoreCard');
+  const values = sheet.getDataRange().getValues();
+  if (values.length < 2) return;
+  const headers = values[0].map(h => String(h).trim());
+  const idCol = headers.indexOf('id');
+  if (idCol === -1) return;
+  for (let i = values.length - 1; i >= 1; i--) {
+    if (String(values[i][idCol]) === String(id)) {
       sheet.deleteRow(i + 1);
     }
   }

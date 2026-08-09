@@ -441,6 +441,43 @@
                     <canvas id="singleRadarChart"></canvas>
                 </div>
             </div>
+
+            <!-- 스크린골프 스코어 카드 (관리자 전용 조회) -->
+            <div class="glass-panel p-4 sm:p-6 rounded-2xl admin-only">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                    <div>
+                        <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                            <svg class="inline-block align-[-0.15em] shrink-0 text-emerald-400" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                            <span id="scoreCardPlayerLabel">민</span> 스크린골프 스코어 카드
+                        </h3>
+                        <p class="text-[11px] sm:text-xs text-slate-400 mt-0.5">라운드별 실제 타수 기록 (관리자 전용 조회 · 구글 시트 연동)</p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <select id="scoreCardYearSelect" class="bg-slate-900 border border-slate-700 text-emerald-300 text-xs rounded-xl px-3 py-2 font-medium focus:outline-none">
+                            <!-- JS Populated -->
+                        </select>
+                        <button id="scoreCardBulkOpenBtn" type="button" class="px-3 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-md whitespace-nowrap">+ 붙여넣기로 추가</button>
+                    </div>
+                </div>
+
+                <p id="scoreCardEmptyState" class="hidden text-xs text-slate-400 py-8 text-center">등록된 스코어 기록이 없습니다. "붙여넣기로 추가"로 스코어 카드를 등록해보세요.</p>
+
+                <div id="scoreCardTableWrap" class="overflow-x-auto touch-scroll custom-scrollbar max-h-96 -mx-1 px-1">
+                    <table class="w-full text-left border-collapse min-w-[420px]">
+                        <thead class="sticky top-0 bg-slate-900 z-10 text-[11px] sm:text-xs text-slate-400 border-b border-slate-700">
+                            <tr>
+                                <th class="p-2.5 sm:p-3 whitespace-nowrap">날짜</th>
+                                <th class="p-2.5 sm:p-3 whitespace-nowrap">골프코스</th>
+                                <th class="p-2.5 sm:p-3 text-right whitespace-nowrap">타수</th>
+                                <th class="p-2.5 sm:p-3 text-right whitespace-nowrap"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="scoreCardTableBody" class="divide-y divide-slate-800 text-xs sm:text-sm font-medium">
+                            <!-- JS Populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <!-- VIEW 2: COMPARE ALL PLAYERS ON SELECTED DATE -->
@@ -1397,6 +1434,50 @@
         </div>
     </div>
 
+    <!-- 스크린골프 스코어 카드 붙여넣기 모달 (관리자 전용) -->
+    <div id="scoreCardBulkModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-3 sm:p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative max-h-[90vh] flex flex-col my-auto">
+            <button id="scoreCardBulkCloseBtn" type="button" class="absolute top-3.5 right-3.5 text-slate-400 hover:text-white p-2 text-lg min-w-[40px] min-h-[40px]">
+                <svg class="inline-block align-[-0.15em] shrink-0" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+
+            <div class="mb-3 pr-8 shrink-0">
+                <h3 class="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                    <svg class="inline-block align-[-0.15em] shrink-0 text-emerald-400" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+                    <span id="scoreCardBulkPlayerLabel">민</span> 스코어 카드 붙여넣기
+                </h3>
+                <p class="text-xs text-slate-400 mt-0.5">골프 앱/사이트의 스코어 카드 화면을 그대로 복사해서 아래에 붙여넣으면, 날짜·골프코스·타수 줄을 자동으로 인식합니다.</p>
+            </div>
+
+            <div class="space-y-3 overflow-y-auto touch-scroll custom-scrollbar pr-1 flex-1">
+                <textarea id="scoreCardBulkTextarea" rows="8" placeholder="여기에 붙여넣기 (예: 2026.08.08 화 / SKP CC / 72)" class="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded-xl p-3 font-mono focus:outline-none focus:border-emerald-500"></textarea>
+
+                <button id="scoreCardBulkParseBtn" type="button" class="w-full px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs rounded-xl transition">미리보기</button>
+
+                <p id="scoreCardBulkParseSummary" class="hidden text-xs text-amber-300">-</p>
+
+                <div id="scoreCardBulkPreviewWrap" class="hidden overflow-x-auto touch-scroll custom-scrollbar max-h-56 border border-slate-700 rounded-xl">
+                    <table class="w-full text-left border-collapse min-w-[380px]">
+                        <thead class="sticky top-0 bg-slate-900 text-[11px] text-slate-400 border-b border-slate-700">
+                            <tr>
+                                <th class="p-2">날짜</th>
+                                <th class="p-2">골프코스</th>
+                                <th class="p-2 text-right">타수</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scoreCardBulkPreviewBody" class="divide-y divide-slate-800 text-xs text-slate-200">
+                            <!-- JS Populated -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <button id="scoreCardBulkSaveBtn" type="button" disabled class="w-full px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-bold text-xs rounded-xl transition">
+                    <span id="scoreCardBulkSaveLabel">추가하기</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Complete 31 rounds data for all 5 players (01/01 to 07/27)
         const DATES = [
@@ -1698,16 +1779,19 @@
             initPlayerManageUI();
             initCourseRoundModule();
             initCategorySwitch();
+            initScoreCardModule();
 
             // 구글 시트 연동이 설정돼 있으면, 다른 플레이어/관리자가 추가해둔 데이터를 불러와 병합
             await loadPlayersFromSheet();
             await loadRoundsFromSheet();
             await loadCourseRoundsFromSheet();
+            await loadScoreCardFromSheet();
             selectedDateIndex = DATES.length - 1;
 
             renderDateDropdown();
             renderAll();
             crRenderAll();
+            renderScoreCard();
         };
 
         function initPlayerTabs() {
@@ -1723,6 +1807,7 @@
             initPlayerTabs();
             renderAll();
             if (typeof crRenderAll === 'function') crRenderAll();
+            if (typeof renderScoreCard === 'function') renderScoreCard();
         }
 
         function renderDateDropdown() {
@@ -4303,6 +4388,289 @@
                     }).join('')}
                 </tr>`;
             }).join('');
+        }
+
+        // ===== 스크린골프 스코어 카드 (관리자 전용, 골프 앱 스코어카드 붙여넣기로 등록) =====
+        // 기존 GOLF_DATA(5인 공동 라운드, G핸디 등)와는 별개로, 선수 개인이 실제로 플레이한
+        // 스크린골프 세션(날짜/골프코스/타수)을 자유 형식으로 기록하기 위한 모듈입니다.
+        // 같은 날짜에 여러 회 플레이할 수 있어(day+course가 다름) date+player로는 유일하지 않으므로,
+        // 각 기록에 고유 id를 부여해 개별 삭제가 가능하게 합니다.
+        let SCREEN_SCORE_CARD = {}; // SCREEN_SCORE_CARD[player] = [{id, date:'YYYY-MM-DD', course, score}, ...]
+        let scoreCardSelectedYear = null;
+        let scoreCardParsedRecords = [];
+        const SCREEN_SCORE_CACHE_KEY = 'jangan_golf_screen_scorecard_cache_v1';
+
+        function ensureScoreCardPlayer(player) {
+            if (!SCREEN_SCORE_CARD[player]) SCREEN_SCORE_CARD[player] = [];
+        }
+
+        function scoreCardLoadFromLocalCache() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(SCREEN_SCORE_CACHE_KEY) || 'null');
+                if (saved && typeof saved === 'object') SCREEN_SCORE_CARD = saved;
+            } catch (err) {
+                console.warn('스코어 카드 캐시를 불러오지 못했습니다.', err);
+            }
+        }
+
+        function scoreCardPersistLocalCache() {
+            localStorage.setItem(SCREEN_SCORE_CACHE_KEY, JSON.stringify(SCREEN_SCORE_CARD));
+        }
+
+        function genScoreCardId() {
+            return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+        }
+
+        // 골프 앱/사이트에서 복사한 스코어 카드 텍스트를 (date, course, score) 레코드 배열로 변환합니다.
+        // "YYYY.MM.DD [요일] [코스명]" 한 줄 + "코스명"(있으면 다음 줄) + "타수" 줄의 조합을 인식하며,
+        // "2026년" / "8월" 같은 구간 헤더와, +5 / -3 같은 파-차이 배지 줄은 무시합니다.
+        function parseScoreCardText(text) {
+            const lines = String(text || '').split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+            const dateRe = /^(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})\.?\s*[가-힣]{0,3}\.?\s*(.*)$/;
+            const yearHeaderRe = /^\d{4}\s*년$/;
+            const monthHeaderRe = /^\d{1,2}\s*월$/;
+            const scoreRe = /^(\d{2,3})\s*(타|점)?$/;
+
+            const records = [];
+            let current = null;
+            function flush() {
+                if (current && current.course && current.score != null) records.push(current);
+                current = null;
+            }
+
+            lines.forEach(line => {
+                if (yearHeaderRe.test(line) || monthHeaderRe.test(line)) return;
+
+                const dateMatch = line.match(dateRe);
+                if (dateMatch) {
+                    flush();
+                    const [, y, m, d, rest] = dateMatch;
+                    current = {
+                        id: genScoreCardId(),
+                        date: `${y}-${('0' + m).slice(-2)}-${('0' + d).slice(-2)}`,
+                        course: rest ? rest.trim() : '',
+                        score: null
+                    };
+                    return;
+                }
+
+                const scoreMatch = line.match(scoreRe);
+                if (scoreMatch && current && current.score == null) {
+                    current.score = parseInt(scoreMatch[1], 10);
+                    return;
+                }
+
+                if (current && !current.course) {
+                    current.course = line;
+                    return;
+                }
+                // 그 외 줄(파 차이 배지 등)은 인식 대상이 아니므로 건너뜁니다.
+            });
+            flush();
+            return records;
+        }
+
+        async function loadScoreCardFromSheet() {
+            if (!hasSheetBackend()) return;
+            try {
+                const res = await fetch(SHEET_API_URL + '?type=screenScoreCard', { method: 'GET' });
+                if (!res.ok) throw new Error('스코어 카드 조회 응답 오류: ' + res.status);
+                const rows = await res.json();
+
+                const byPlayer = {};
+                rows.forEach(row => {
+                    if (!row.player || !row.date) return;
+                    if (!byPlayer[row.player]) byPlayer[row.player] = [];
+                    byPlayer[row.player].push({
+                        id: String(row.id || ''),
+                        date: String(row.date).trim(),
+                        course: row.course || '',
+                        score: parseFloat(row.score)
+                    });
+                });
+
+                // 시트가 정답입니다. 시트에 없는 로컬 전용 기록(다른 기기에서 삭제됐거나, 시트 연동 전
+                // 이 브라우저에만 있던 기록)은 정리합니다 — 코스라운드 캐시 재사용과 동일한 원칙입니다.
+                PLAYERS.forEach(player => {
+                    SCREEN_SCORE_CARD[player] = byPlayer[player] || [];
+                });
+
+                scoreCardPersistLocalCache();
+            } catch (err) {
+                console.warn('구글 시트에서 스코어 카드를 불러오지 못해 로컬 데이터로만 표시합니다.', err);
+            }
+        }
+
+        async function saveScoreCardRecordsToSheet(records) {
+            if (!hasSheetBackend()) return;
+            try {
+                await fetch(SHEET_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ type: 'screenScoreCard', records })
+                });
+            } catch (err) {
+                console.warn('구글 시트에 스코어 카드 저장을 실패해 이 브라우저에만 저장됩니다.', err);
+            }
+        }
+
+        async function deleteScoreCardRecordFromSheet(id) {
+            if (!hasSheetBackend()) return;
+            try {
+                await fetch(SHEET_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ type: 'screenScoreCard', action: 'delete', id })
+                });
+            } catch (err) {
+                console.warn('구글 시트에서 스코어 카드 삭제를 실패해 이 브라우저에만 반영됩니다.', err);
+            }
+        }
+
+        async function addScoreCardRecords(player, parsedRecords) {
+            ensureScoreCardPlayer(player);
+            const records = parsedRecords.map(r => ({ ...r, player }));
+            SCREEN_SCORE_CARD[player] = SCREEN_SCORE_CARD[player].concat(records);
+            scoreCardPersistLocalCache();
+            renderScoreCard();
+            await saveScoreCardRecordsToSheet(records);
+        }
+
+        async function deleteScoreCardRecord(player, id) {
+            ensureScoreCardPlayer(player);
+            SCREEN_SCORE_CARD[player] = SCREEN_SCORE_CARD[player].filter(r => r.id !== id);
+            scoreCardPersistLocalCache();
+            renderScoreCard();
+            await deleteScoreCardRecordFromSheet(id);
+        }
+
+        function renderScoreCard() {
+            const yearSel = document.getElementById('scoreCardYearSelect');
+            const emptyEl = document.getElementById('scoreCardEmptyState');
+            const wrapEl = document.getElementById('scoreCardTableWrap');
+            const tbody = document.getElementById('scoreCardTableBody');
+            const labelEl = document.getElementById('scoreCardPlayerLabel');
+            if (!yearSel || !tbody) return;
+
+            if (labelEl) labelEl.textContent = selectedPlayer;
+            ensureScoreCardPlayer(selectedPlayer);
+            const records = SCREEN_SCORE_CARD[selectedPlayer] || [];
+
+            const years = Array.from(new Set(records.map(r => r.date.slice(0, 4)))).sort((a, b) => b - a);
+            if (!years.length) years.push(String(new Date().getFullYear()));
+            if (!scoreCardSelectedYear || !years.includes(scoreCardSelectedYear)) {
+                scoreCardSelectedYear = years[0];
+            }
+            yearSel.innerHTML = years.map(y => `<option value="${y}" ${y === scoreCardSelectedYear ? 'selected' : ''}>${y}년</option>`).join('');
+
+            const filtered = records
+                .filter(r => r.date.slice(0, 4) === scoreCardSelectedYear)
+                .sort((a, b) => b.date.localeCompare(a.date));
+
+            if (!filtered.length) {
+                if (emptyEl) emptyEl.classList.remove('hidden');
+                if (wrapEl) wrapEl.classList.add('hidden');
+                tbody.innerHTML = '';
+                return;
+            }
+            if (emptyEl) emptyEl.classList.add('hidden');
+            if (wrapEl) wrapEl.classList.remove('hidden');
+
+            const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+            tbody.innerHTML = filtered.map(r => {
+                const d = new Date(r.date + 'T00:00:00Z');
+                const wd = isNaN(d.getTime()) ? '' : weekdays[d.getUTCDay()];
+                return `<tr class="hover:bg-slate-800/40 transition">
+                    <td class="p-2.5 sm:p-3 whitespace-nowrap">${r.date}${wd ? ' (' + wd + ')' : ''}</td>
+                    <td class="p-2.5 sm:p-3 whitespace-nowrap">${r.course || '-'}</td>
+                    <td class="p-2.5 sm:p-3 text-right font-bold text-emerald-300 whitespace-nowrap">${isNaN(r.score) ? '-' : r.score}</td>
+                    <td class="p-2.5 sm:p-3 text-right whitespace-nowrap admin-only">
+                        <button type="button" class="scoreCardDeleteBtn text-slate-500 hover:text-rose-400 transition p-1" data-id="${escapeHtmlAttr(r.id)}" title="삭제">
+                            <svg class="inline-block align-[-0.15em] shrink-0" style="width:1.1em;height:1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function renderScoreCardBulkPreview() {
+            const textarea = document.getElementById('scoreCardBulkTextarea');
+            const summaryEl = document.getElementById('scoreCardBulkParseSummary');
+            const previewWrap = document.getElementById('scoreCardBulkPreviewWrap');
+            const previewBody = document.getElementById('scoreCardBulkPreviewBody');
+            const saveBtn = document.getElementById('scoreCardBulkSaveBtn');
+
+            scoreCardParsedRecords = parseScoreCardText(textarea.value);
+
+            if (!scoreCardParsedRecords.length) {
+                summaryEl.textContent = '인식된 기록이 없습니다. 형식을 확인해 주세요 (날짜 / 골프코스 / 타수 순서).';
+                summaryEl.classList.remove('hidden');
+                previewWrap.classList.add('hidden');
+                saveBtn.disabled = true;
+                return;
+            }
+
+            summaryEl.textContent = `${scoreCardParsedRecords.length}건 인식됨 — 아래 미리보기를 확인 후 추가하세요.`;
+            summaryEl.classList.remove('hidden');
+            previewBody.innerHTML = scoreCardParsedRecords.map(r =>
+                `<tr><td class="p-2 whitespace-nowrap">${r.date}</td><td class="p-2 whitespace-nowrap">${r.course}</td><td class="p-2 text-right whitespace-nowrap">${r.score}</td></tr>`
+            ).join('');
+            previewWrap.classList.remove('hidden');
+            saveBtn.disabled = false;
+        }
+
+        function initScoreCardModule() {
+            scoreCardLoadFromLocalCache();
+
+            const openBtn = document.getElementById('scoreCardBulkOpenBtn');
+            const modal = document.getElementById('scoreCardBulkModal');
+            const closeBtn = document.getElementById('scoreCardBulkCloseBtn');
+            const parseBtn = document.getElementById('scoreCardBulkParseBtn');
+            const saveBtn = document.getElementById('scoreCardBulkSaveBtn');
+            const saveLabel = document.getElementById('scoreCardBulkSaveLabel');
+            const textarea = document.getElementById('scoreCardBulkTextarea');
+            const playerLabel = document.getElementById('scoreCardBulkPlayerLabel');
+            const yearSel = document.getElementById('scoreCardYearSelect');
+
+            function closeBulkModal() {
+                modal.classList.add('hidden');
+                textarea.value = '';
+                scoreCardParsedRecords = [];
+                document.getElementById('scoreCardBulkParseSummary').classList.add('hidden');
+                document.getElementById('scoreCardBulkPreviewWrap').classList.add('hidden');
+                saveBtn.disabled = true;
+            }
+
+            if (openBtn) openBtn.addEventListener('click', () => {
+                if (playerLabel) playerLabel.textContent = selectedPlayer;
+                modal.classList.remove('hidden');
+            });
+            if (closeBtn) closeBtn.addEventListener('click', closeBulkModal);
+            modal.addEventListener('click', (e) => { if (e.target === modal) closeBulkModal(); });
+            if (parseBtn) parseBtn.addEventListener('click', renderScoreCardBulkPreview);
+
+            if (saveBtn) saveBtn.addEventListener('click', async () => {
+                if (!scoreCardParsedRecords.length) return;
+                saveBtn.disabled = true;
+                saveLabel.textContent = '추가하는 중...';
+                await addScoreCardRecords(selectedPlayer, scoreCardParsedRecords);
+                saveLabel.textContent = '추가하기';
+                closeBulkModal();
+            });
+
+            if (yearSel) yearSel.addEventListener('change', (e) => {
+                scoreCardSelectedYear = e.target.value;
+                renderScoreCard();
+            });
+
+            const tbody = document.getElementById('scoreCardTableBody');
+            if (tbody) tbody.addEventListener('click', (e) => {
+                const btn = e.target.closest('.scoreCardDeleteBtn');
+                if (!btn) return;
+                const id = btn.getAttribute('data-id');
+                if (!confirm('이 스코어 기록을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) return;
+                deleteScoreCardRecord(selectedPlayer, id);
+            });
         }
     </script>
 </body>
