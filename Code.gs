@@ -38,7 +38,7 @@ const DEFAULT_HEADERS = {
   screenGolf: ['date', 'player', 'gHandicap', 'fir', 'gir', 'putt', 'distance'],
   courseRounds: ['date', 'player', 'handicap'],
   players: ['name'],
-  screenScoreCard: ['id', 'date', 'player', 'course', 'score']
+  screenScoreCard: ['id', 'date', 'player', 'course', 'score', 'overPar']
 };
 
 function doGet(e) {
@@ -236,9 +236,12 @@ function deleteRoundRecords(type, date) {
 
 // 스크린골프 스코어 카드: date+player가 유일하지 않으므로(같은 날 여러 회 플레이 가능) 항상
 // 새 행으로 추가만 합니다(덮어쓰기 없음). 각 record는 프론트엔드에서 만든 고유 id를 포함합니다.
+// records에 overPar처럼 시트에 아직 없는 새 필드가 오면 ensureColumns가 열을 자동으로 추가합니다
+// (COURSE_METRICS 확장과 동일한 방식) — 그래서 이미 만들어진 시트에도 재배포 없이 반영됩니다.
 function appendScoreCardRecords(records) {
   const sheet = getOrCreateSheet('screenScoreCard');
-  const headers = DEFAULT_HEADERS.screenScoreCard;
+  ensureColumns(sheet, records);
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
   ensureDateColumnAsText(sheet, headers, normalizeFullDateCell);
 
   records.forEach(record => {
