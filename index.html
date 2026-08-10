@@ -3028,7 +3028,9 @@
             }));
             const minGH = Math.min(...standings.map(s => s.gHandicap));
             standings.forEach(s => {
-                s.diff = Math.round(s.gHandicap - minGH);
+                // s.gHandicap - minGH는 항상 0 이상이라 지금은 안전하지만, renderScratchView의
+                // 상대별 비교와 같은 방식(절대값 반올림 후 부호 적용)으로 통일해 둡니다.
+                s.diff = Math.round(Math.abs(s.gHandicap - minGH));
             });
             return standings;
         }
@@ -3086,7 +3088,12 @@
                 const selectedGH = GOLF_DATA[selectedPlayer].gHandicap[latestIdx];
                 const others = PLAYERS.filter(p => p !== selectedPlayer).map(p => {
                     const gh = GOLF_DATA[p].gHandicap[latestIdx];
-                    return { player: p, gh, diff: Math.round(gh - selectedGH) };
+                    const rawDiff = gh - selectedGH;
+                    // Math.round는 음수 .5는 0 방향으로 반올림해(-2.5 → -2) 순위표의 반올림(+3타 등)과
+                    // 어긋나 보일 수 있으므로, 절대값을 반올림한 뒤 부호를 붙여 항상 "0에서 먼 방향"으로
+                    // 일관되게 반올림합니다. 예: 5.5와 3.0의 차이는 어느 쪽에서 봐도 3타.
+                    const diff = Math.sign(rawDiff) * Math.round(Math.abs(rawDiff));
+                    return { player: p, gh, diff };
                 });
 
                 vsContainer.innerHTML = others.map(o => {
