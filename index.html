@@ -3180,7 +3180,12 @@
 
             document.getElementById('tableCount').innerText = DATES.length;
 
-            tbody.innerHTML = DATES.map((date, idx) => `
+            // DATES는 항상 오름차순(과거→최신)으로 정렬돼 있으므로, 최신 회차가 위로 오도록
+            // 인덱스 순서만 뒤집어서 표시합니다 (데이터 배열 자체의 정렬은 그대로 둡니다).
+            const order = DATES.map((_, idx) => idx).reverse();
+            tbody.innerHTML = order.map(idx => {
+                const date = DATES[idx];
+                return `
                 <tr class="hover:bg-slate-800/50 transition ${idx === selectedDateIndex ? 'bg-emerald-900/30 text-emerald-200' : ''}">
                     <td class="p-3 text-slate-300 font-semibold">2026-${date.replace('/', '-')}</td>
                     <td class="p-3">${selectedPlayer}</td>
@@ -3190,7 +3195,8 @@
                     <td class="p-3 text-right text-amber-300">${p.putt[idx].toFixed(2)}</td>
                     <td class="p-3 text-right">${p.distance[idx].toFixed(1)}m</td>
                 </tr>
-            `).join('');
+            `;
+            }).join('');
         }
 
         // ============================================================
@@ -3963,7 +3969,12 @@
 
             document.getElementById('crTableCount').innerText = CR_DATES.length;
 
-            tbody.innerHTML = CR_DATES.map((date, idx) => `
+            // CR_DATES는 항상 오름차순(과거→최신)으로 정렬돼 있으므로, 최신 회차가 위로 오도록
+            // 인덱스 순서만 뒤집어서 표시합니다 (데이터 배열 자체의 정렬은 그대로 둡니다).
+            const order = CR_DATES.map((_, idx) => idx).reverse();
+            tbody.innerHTML = order.map(idx => {
+                const date = CR_DATES[idx];
+                return `
                 <tr class="hover:bg-slate-800/50 transition ${idx === crSelectedDateIndex ? 'bg-emerald-900/30 text-emerald-200' : ''}">
                     <td class="p-3 text-slate-300 font-semibold whitespace-nowrap">2026-${date.replace('/', '-')}</td>
                     <td class="p-3 text-slate-400 whitespace-nowrap">${CR_COURSE_NAMES[idx] || '-'}</td>
@@ -3973,7 +3984,8 @@
                         return `<td class="p-3 text-right font-bold whitespace-nowrap">${v != null ? v.toFixed(m.decimals) + (m.unit || '') : '-'}</td>`;
                     }).join('')}
                 </tr>
-            `).join('');
+            `;
+            }).join('');
         }
 
         function crRenderCompareView() {
