@@ -400,6 +400,52 @@
                         <p id="aiPuttingTip" class="text-[11px] sm:text-xs text-slate-300 leading-relaxed">-</p>
                     </div>
                 </div>
+
+                <!-- 심층 분석: 코스별 성향 / 동호회 내 위치 / 베스트 라운드 대비 / 지표 상관관계 -->
+                <div class="mt-4 pt-4 border-t border-slate-700/60">
+                    <p class="text-[11px] font-bold text-slate-400 mb-3 flex items-center gap-1.5">
+                        <svg class="inline-block align-[-0.15em] shrink-0" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        심층 분석
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="rounded-xl p-3.5 border-l-4 border-l-emerald-500 bg-slate-800/40">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                                    <svg class="inline-block align-[-0.15em] shrink-0 text-emerald-400" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                    코스별 성향
+                                </span>
+                            </div>
+                            <p id="aiCourseText" class="text-[11px] sm:text-xs text-slate-300 leading-relaxed">-</p>
+                        </div>
+                        <div class="rounded-xl p-3.5 border-l-4 border-l-blue-500 bg-slate-800/40">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                                    <svg class="inline-block align-[-0.15em] shrink-0 text-blue-400" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+                                    동호회 내 위치
+                                </span>
+                            </div>
+                            <p id="aiRankText" class="text-[11px] sm:text-xs text-slate-300 leading-relaxed">-</p>
+                        </div>
+                        <div class="rounded-xl p-3.5 border-l-4 border-l-amber-500 bg-slate-800/40">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                                    <svg class="inline-block align-[-0.15em] shrink-0 text-amber-400" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                    베스트 라운드 대비
+                                </span>
+                            </div>
+                            <p id="aiBestCompareText" class="text-[11px] sm:text-xs text-slate-300 leading-relaxed">-</p>
+                        </div>
+                        <div class="rounded-xl p-3.5 border-l-4 border-l-purple-500 bg-slate-800/40">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                                    <svg class="inline-block align-[-0.15em] shrink-0 text-purple-400" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="13" cy="14.5" r="1.5"/><circle cx="17" cy="7" r="1.5"/><circle cx="19.5" cy="4.5" r="1.5"/><path d="M6.8 16.3 8 13.2"/><path d="M10.2 11.5 12 13.3"/><path d="M14.2 13.4 16 8.6"/><path d="M18.2 6.1 19 5.3"/></svg>
+                                    지표 상관관계로 본 변화
+                                </span>
+                            </div>
+                            <p id="aiCorrelationText" class="text-[11px] sm:text-xs text-slate-300 leading-relaxed">-</p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- FULL HISTORY TABLE (개별 탭 전용) -->
@@ -2407,6 +2453,197 @@
                 mid: '퍼팅이 평균 수준입니다. 1~2m 이내 숏퍼팅 성공률을 끌어올리는 연습이 스코어 개선에 가장 효과적입니다.',
                 high: '퍼팅감이 매우 좋습니다. 지금의 그린 리딩 루틴을 그대로 유지하세요.'
             });
+
+            // 심층 분석 4종
+            document.getElementById('aiCourseText').textContent = computeCourseInsight(selectedPlayer);
+            document.getElementById('aiRankText').textContent = computeRankInsight(selectedPlayer, idx);
+            document.getElementById('aiBestCompareText').textContent = computeBestRoundCompare(selectedPlayer, idx);
+            document.getElementById('aiCorrelationText').textContent = computeCorrelationInsight(selectedPlayer, idx);
+        }
+
+        // 한글 조사(이/가, 은/는, 과/와)를 단어 끝 받침 유무에 맞게 골라줍니다.
+        // 심층 분석 문구가 "G핸디가"/"안착률가"처럼 어색해지지 않도록 지표 라벨마다 동적으로 적용합니다.
+        function hasBatchim(str) {
+            const s = String(str || '').trim();
+            if (!s) return false;
+            const code = s.charCodeAt(s.length - 1);
+            if (code < 0xAC00 || code > 0xD7A3) return false; // 한글 음절이 아니면 받침 없다고 간주
+            return (code - 0xAC00) % 28 !== 0;
+        }
+        function josa(word, withBatchim, withoutBatchim) {
+            return hasBatchim(word) ? withBatchim : withoutBatchim;
+        }
+
+        // ===== 심층 분석 1: 코스별 성향 (스크린골프 스코어 카드 데이터 기반) =====
+        // 같은 코스를 2회 이상 플레이한 기록이 있어야 "성향"이라 부를 만해서, 그 조건을 만족하는
+        // 코스 중 전체 평균 대비 가장 잘한 곳/아쉬운 곳을 짚어줍니다.
+        function computeCourseInsight(player) {
+            const records = (typeof SCREEN_SCORE_CARD !== 'undefined' && SCREEN_SCORE_CARD[player]) ? SCREEN_SCORE_CARD[player] : [];
+            const valid = records.filter(r => r.course && !isNaN(r.score));
+            if (valid.length < 3) {
+                return '스코어 카드 기록이 아직 부족해 코스별 성향을 분석하기 어렵습니다. (관리자가 스크린골프 스코어 카드를 등록하면 자동으로 분석됩니다.)';
+            }
+
+            const overallAvg = valid.reduce((a, r) => a + r.score, 0) / valid.length;
+
+            const byCourse = {};
+            valid.forEach(r => {
+                if (!byCourse[r.course]) byCourse[r.course] = [];
+                byCourse[r.course].push(r.score);
+            });
+            const courseStats = Object.keys(byCourse)
+                .map(course => {
+                    const scores = byCourse[course];
+                    const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+                    return { course, avg, count: scores.length, diff: overallAvg - avg };
+                })
+                .filter(c => c.count >= 2); // 1회만 플레이한 코스는 "성향"이라 하기엔 근거가 부족
+
+            if (!courseStats.length) {
+                return `아직 같은 코스에서 2회 이상 플레이한 기록이 없어 코스별 성향을 짚기는 어렵습니다. 지금까지 전체 평균 타수는 ${overallAvg.toFixed(1)}타입니다.`;
+            }
+
+            const best = courseStats.reduce((a, b) => (b.diff > a.diff ? b : a));
+            const worst = courseStats.reduce((a, b) => (b.diff < a.diff ? b : a));
+
+            let text = '';
+            if (best.diff >= 1) {
+                text += `${best.course}에서는 평균 ${best.avg.toFixed(1)}타로 전체 평균(${overallAvg.toFixed(1)}타) 대비 ${best.diff.toFixed(1)}타 더 좋은 성적을 보였습니다.`;
+            }
+            if (worst.course !== best.course && worst.diff <= -1) {
+                text += `${text ? ' 반면 ' : ''}${worst.course}에서는 평균 ${worst.avg.toFixed(1)}타로 ${Math.abs(worst.diff).toFixed(1)}타 더 아쉬운 성적이었습니다.`;
+            }
+            if (!text) {
+                text = `플레이한 코스별 평균 타수가 전체 평균(${overallAvg.toFixed(1)}타)과 큰 차이 없이 고른 편입니다.`;
+            }
+            return text;
+        }
+
+        // ===== 심층 분석 2: 동호회 내 상대적 위치 (선택 라운드, 5개 지표 순위) =====
+        function computeRankInsight(player, idx) {
+            if (PLAYERS.length < 2) return '비교할 동반자가 없어 순위를 산출할 수 없습니다.';
+            const metrics = [
+                { key: 'gHandicap', label: 'G핸디', better: 'low' },
+                { key: 'fir', label: '페어웨이 안착률', better: 'high' },
+                { key: 'gir', label: '그린적중률', better: 'high' },
+                { key: 'putt', label: '퍼팅수', better: 'low' },
+                { key: 'distance', label: '비거리', better: 'high' }
+            ];
+            const n = PLAYERS.length;
+            const ranks = metrics.map(m => {
+                const values = PLAYERS.map(p => ({ player: p, val: GOLF_DATA[p][m.key][idx] }));
+                values.sort((a, b) => m.better === 'low' ? (a.val - b.val) : (b.val - a.val));
+                const rank = values.findIndex(v => v.player === player) + 1;
+                return { ...m, rank };
+            });
+
+            const best = ranks.reduce((a, b) => (b.rank < a.rank ? b : a));
+            const worst = ranks.reduce((a, b) => (b.rank > a.rank ? b : a));
+
+            if (best.key === worst.key) {
+                return `이번 라운드는 5개 지표 모두 동호회 내 ${best.rank}위로 고르게 위치했습니다.`;
+            }
+            const bestTag = best.rank === 1 ? '1위로 가장 강점' : `${best.rank}위로 상위권`;
+            const worstTag = worst.rank === n ? `${n}위로 상대적으로 아쉬운 편` : `${worst.rank}위`;
+            return `동호회 ${n}명 중 ${best.label}${josa(best.label, '은', '는')} ${bestTag}이고, ${worst.label}${josa(worst.label, '은', '는')} ${worstTag}입니다.`;
+        }
+
+        // ===== 심층 분석 3: 베스트 라운드 대비 비교 =====
+        function computeBestRoundCompare(player, idx) {
+            const pData = GOLF_DATA[player];
+            if (!pData || DATES.length < 2) {
+                return '비교할 만큼 누적된 라운드 기록이 아직 부족합니다.';
+            }
+            let bestIdx = 0;
+            for (let i = 1; i < DATES.length; i++) {
+                if (pData.gHandicap[i] < pData.gHandicap[bestIdx]) bestIdx = i;
+            }
+            if (bestIdx === idx) {
+                return `이번 라운드(G핸디 ${pData.gHandicap[idx].toFixed(1)})가 지금까지 기록 중 가장 좋은 라운드입니다! 지금의 흐름을 그대로 이어가 보세요.`;
+            }
+
+            const bestDate = `2026-${DATES[bestIdx].replace('/', '-')}`;
+            const metrics = [
+                { key: 'fir', label: '페어웨이 안착률', unit: '%p', better: 'high' },
+                { key: 'gir', label: '그린적중률', unit: '%p', better: 'high' },
+                { key: 'putt', label: '퍼팅수', unit: '개', better: 'low' },
+                { key: 'distance', label: '비거리', unit: 'm', better: 'high' }
+            ];
+            const gaps = metrics.map(m => {
+                const bestVal = pData[m.key][bestIdx];
+                const curVal = pData[m.key][idx];
+                // "안 좋은 방향으로 벌어진 정도"가 클수록 우선 개선 포인트
+                const gap = m.better === 'high' ? (bestVal - curVal) : (curVal - bestVal);
+                return { ...m, bestVal, curVal, gap };
+            });
+            const primary = gaps.reduce((a, b) => (b.gap > a.gap ? b : a));
+
+            if (primary.gap <= 0.05) {
+                return `베스트 라운드(${bestDate}, G핸디 ${pData.gHandicap[bestIdx].toFixed(1)})와 비교해도 이번 라운드 세부 지표가 큰 차이 없이 좋은 편입니다.`;
+            }
+            return `베스트 라운드(${bestDate}, G핸디 ${pData.gHandicap[bestIdx].toFixed(1)})와 비교하면 이번 라운드는 ${primary.label}${josa(primary.label, '이', '가')} ${primary.gap.toFixed(1)}${primary.unit} 아쉽습니다. 이 부분만 회복해도 베스트에 가까워질 수 있습니다.`;
+        }
+
+        // ===== 심층 분석 4: 개인별 지표 상관관계로 설명하는 이번 라운드 변화 =====
+        // 이번 라운드에 가장 크게 움직인 지표를 찾고, 그 선수 본인의 과거 기록에서 그 지표와
+        // 가장 강하게 상관관계를 보여온 다른 지표를 짚어, 실제로 함께 움직였는지까지 확인합니다.
+        function computeCorrelationInsight(player, idx) {
+            const pData = GOLF_DATA[player];
+            if (!pData || idx < 1 || DATES.length < 6) {
+                return '상관관계를 분석하려면 누적된 라운드 기록이 좀 더 필요합니다 (최소 6회차 이상).';
+            }
+            const metrics = [
+                { key: 'gHandicap', label: 'G핸디' },
+                { key: 'fir', label: '페어웨이 안착률' },
+                { key: 'gir', label: '그린적중률' },
+                { key: 'putt', label: '퍼팅수' },
+                { key: 'distance', label: '비거리' }
+            ];
+            const xs = pData.gHandicap.map((_, i) => i).slice(0, idx + 1);
+
+            // 이번 라운드(idx)와 직전 라운드(idx-1) 사이, 표준편차 대비 가장 크게 움직인 지표를 찾습니다.
+            let moved = null, movedZ = 0;
+            metrics.forEach(m => {
+                const series = xs.map(i => pData[m.key][i]);
+                const mean = series.reduce((a, b) => a + b, 0) / series.length;
+                const std = Math.sqrt(series.reduce((a, b) => a + (b - mean) * (b - mean), 0) / series.length) || 1e-6;
+                const delta = pData[m.key][idx] - pData[m.key][idx - 1];
+                const z = Math.abs(delta) / std;
+                if (z > movedZ) { movedZ = z; moved = { ...m, delta, std }; }
+            });
+            if (!moved || movedZ < 0.5) {
+                return '이번 라운드는 직전 회차 대비 특별히 크게 움직인 지표가 없어, 상관관계로 설명할 뚜렷한 변화가 없습니다.';
+            }
+
+            // moved 지표와 가장 상관관계가 강한 다른 지표를 찾습니다.
+            let bestPair = null;
+            metrics.forEach(m => {
+                if (m.key === moved.key) return;
+                const r = pearsonCorrelation(xs.map(i => pData[moved.key][i]), xs.map(i => pData[m.key][i]));
+                if (!isNaN(r) && (!bestPair || Math.abs(r) > Math.abs(bestPair.r))) {
+                    bestPair = { ...m, r };
+                }
+            });
+            if (!bestPair || Math.abs(bestPair.r) < 0.35) {
+                return `이번 라운드 ${moved.label}${josa(moved.label, '이', '가')} 직전 회차 대비 크게 움직였지만, 귀하의 기록상 다른 지표와 뚜렷한 상관관계는 아직 발견되지 않았습니다.`;
+            }
+
+            const otherDelta = pData[bestPair.key][idx] - pData[bestPair.key][idx - 1];
+            const expectedSameDirection = bestPair.r > 0; // 양의 상관관계면 같은 방향, 음이면 반대 방향으로 움직여야 "일치"
+            const movedUp = moved.delta > 0;
+            const otherMovedUp = otherDelta > 0;
+            const confirmed = Math.abs(otherDelta) > 1e-6 && (expectedSameDirection ? (movedUp === otherMovedUp) : (movedUp !== otherMovedUp));
+
+            const movedDir = movedUp ? '상승' : '하락';
+            const corrLabel = corrQualLabel(bestPair.r);
+            let text = `이번 라운드 ${moved.label}${josa(moved.label, '이', '가')} 직전 회차 대비 ${movedDir}했는데, 귀하의 기록상 ${moved.label}${josa(moved.label, '과', '와')} ${bestPair.label}${josa(bestPair.label, '은', '는')} ${corrLabel}(r=${bestPair.r.toFixed(2)})를 보여왔습니다.`;
+            if (confirmed) {
+                const otherDir = otherMovedUp ? '상승' : '하락';
+                text += ` 실제로 이번 라운드 ${bestPair.label}도 함께 ${otherDir}해 그 흐름과 일치했습니다.`;
+            } else {
+                text += ` 이 흐름이 이어지는지 다음 라운드에서 ${bestPair.label} 변화를 지켜볼 만합니다.`;
+            }
+            return text;
         }
 
         function driverMidTip(scoreFIR, scoreDist) {
