@@ -27,6 +27,11 @@
  * ------------------------------------------------------------
  */
 
+// 관리자 쓰기(추가/수정/삭제) 요청마다 이 토큰이 body.token으로 함께 와야 처리됩니다.
+// index.html의 ADMIN_PIN과 반드시 같은 값이어야 합니다 — PIN을 바꾸면 이 값도 같이 바꾸고
+// 재배포해주세요. 조회(doGet)는 토큰 없이도 계속 누구나 가능합니다(화면 표시용이라 필요).
+const ADMIN_TOKEN = '0243';
+
 const SHEET_NAMES = {
   screenGolf: 'Rounds',
   courseRounds: 'CourseRounds',
@@ -51,6 +56,13 @@ function doGet(e) {
 function doPost(e) {
   const body = JSON.parse(e.postData.contents);
   const type = body.type || 'screenGolf';
+
+  // 쓰기 요청은 전부 토큰 검증을 거칩니다. 프론트엔드가 관리자 PIN을 확인한 경우에만
+  // 이 토큰을 실어 보내므로, PIN을 모르는 상태로 API를 직접 호출해 데이터를 추가/삭제하는
+  // 것을 막습니다. (완전한 인증은 아니지만, 화면의 관리자 PIN 잠금을 서버 쪽에서도 강제합니다.)
+  if (body.token !== ADMIN_TOKEN) {
+    return jsonResponse({ status: 'error', message: '인증 실패: 관리자 토큰이 올바르지 않습니다.' });
+  }
 
   if (body.action === 'delete') {
     if (type === 'screenScoreCard') {

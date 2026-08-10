@@ -1610,8 +1610,13 @@
         const themeLabelEl = document.getElementById('themeLabel');
 
         // Admin/User Mode Elements
-        const ADMIN_PIN = '0243'; // 클라이언트 측 간이 PIN (완전한 보안 인증이 아닙니다)
+        const ADMIN_PIN = '0243'; // 관리자 PIN. 화면 잠금뿐 아니라 아래 adminApiToken을 통해
+        // 백엔드(Code.gs) 쓰기 요청에도 함께 실려가 서버 쪽에서도 검증됩니다 (PIN을 바꾸면
+        // Code.gs의 ADMIN_TOKEN도 반드시 같이 바꾸고 재배포해야 합니다).
+        // 정적 사이트 특성상 이 값은 페이지 소스에 그대로 노출됩니다 — 완전한 보안 인증이 아니라
+        // "저장소를 직접 읽어보지 않는 사람의 무심코 클릭/자동화 접근을 막는" 수준의 방어입니다.
         let isAdminMode = false;
+        let adminApiToken = null; // PIN 확인에 성공하면 채워지고, 쓰기 요청마다 함께 전송됩니다.
         const adminModeToggleBtn = document.getElementById('adminModeToggleBtn');
         const adminIconLock = document.getElementById('adminIconLock');
         const adminIconUnlock = document.getElementById('adminIconUnlock');
@@ -1730,6 +1735,7 @@
         // ===== 관리자/사용자 모드 =====
         function applyAdminMode(isAdmin) {
             isAdminMode = isAdmin;
+            if (!isAdmin) adminApiToken = null; // 사용자 모드로 돌아가면 쓰기 토큰도 함께 비웁니다.
             document.body.classList.toggle('user-mode', !isAdmin);
             adminIconLock.classList.toggle('hidden', isAdmin);
             adminIconUnlock.classList.toggle('hidden', !isAdmin);
@@ -1758,6 +1764,7 @@
 
         function processAdminPinAttempt() {
             if (adminPinInput.value === ADMIN_PIN) {
+                adminApiToken = ADMIN_PIN;
                 applyAdminMode(true);
                 closeAdminPinModal();
             } else {
@@ -2029,7 +2036,7 @@
                 await fetch(SHEET_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ type: 'screenGolf', date: formattedDate, records: records })
+                    body: JSON.stringify({ type: 'screenGolf', date: formattedDate, records: records, token: adminApiToken })
                 });
             } catch (err) {
                 console.warn('구글 시트에 라운드 저장을 실패해 이 브라우저에만 저장됩니다.', err);
@@ -2042,7 +2049,7 @@
                 await fetch(SHEET_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ type: 'screenGolf', action: 'delete', date: formattedDate })
+                    body: JSON.stringify({ type: 'screenGolf', action: 'delete', date: formattedDate, token: adminApiToken })
                 });
             } catch (err) {
                 console.warn('구글 시트에서 라운드 삭제를 실패해 이 브라우저에만 반영됩니다.', err);
@@ -3245,7 +3252,7 @@
         }
 
         function addPlayer(name) {
-            name = (name || '').trim();
+            name = sanitizeUserText(name);
             if (!name) return { ok: false, msg: '이름을 입력해주세요.' };
             if (PLAYERS.includes(name)) return { ok: false, msg: '이미 존재하는 이름입니다.' };
             PLAYERS.push(name);
@@ -3333,7 +3340,8 @@
                 const res = await fetch(SHEET_API_URL + '?type=players', { method: 'GET' });
                 if (!res.ok) throw new Error('선수 명단 조회 응답 오류: ' + res.status);
                 const rows = await res.json();
-                const names = rows.map(r => (typeof r === 'string' ? r : r.name)).filter(Boolean);
+                // 시트를 직접 수정해 악성 문자가 들어왔을 가능성까지 방어하기 위해 여기서도 정리합니다.
+                const names = rows.map(r => sanitizeUserText(typeof r === 'string' ? r : r.name)).filter(Boolean);
                 let changed = false;
                 names.forEach(n => {
                     if (!PLAYERS.includes(n)) {
@@ -3361,7 +3369,7 @@
                 await fetch(SHEET_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ type: 'players', players: PLAYERS })
+                    body: JSON.stringify({ type: 'players', players: PLAYERS, token: adminApiToken })
                 });
             } catch (err) {
                 console.warn('구글 시트에 선수 명단 저장을 실패했습니다.', err);
@@ -3568,7 +3576,7 @@
                     const rec = {};
                     COURSE_METRICS.forEach(m => { rec[m.key] = parseFloat(row[m.key]); });
                     byDate[date][row.player] = rec;
-                    if (row.courseName) courseNameByDate[date] = row.courseName;
+                    if (row.courseName) courseNameByDate[date] = sanitizeUserText(row.courseName);
                 });
                 Object.keys(byDate).forEach(date => crApplyRoundData(date, byDate[date], courseNameByDate[date]));
 
@@ -3592,7 +3600,7 @@
                 await fetch(SHEET_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ type: 'courseRounds', date: formattedDate, records: records })
+                    body: JSON.stringify({ type: 'courseRounds', date: formattedDate, records: records, token: adminApiToken })
                 });
             } catch (err) {
                 console.warn('구글 시트에 코스라운드 저장을 실패해 이 브라우저에만 저장됩니다.', err);
@@ -3605,7 +3613,7 @@
                 await fetch(SHEET_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ type: 'courseRounds', action: 'delete', date: formattedDate })
+                    body: JSON.stringify({ type: 'courseRounds', action: 'delete', date: formattedDate, token: adminApiToken })
                 });
             } catch (err) {
                 console.warn('구글 시트에서 코스라운드 삭제를 실패해 이 브라우저에만 반영됩니다.', err);
@@ -3626,6 +3634,16 @@
 
         function escapeHtmlAttr(str) {
             return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        // 선수 이름/코스명처럼 자유 텍스트로 입력받아 화면 여러 곳에 그대로 표시(innerHTML)되는
+        // 값에서 HTML 특수문자를 제거합니다. 표시할 때마다 일일이 이스케이프하는 대신 입력받는
+        // 시점에 한 번 정리해두면, 저장형 XSS(악성 스크립트가 담긴 이름/코스명이 다른 회원
+        // 화면에서 그대로 실행되는 것)를 원천 차단할 수 있습니다.
+        function sanitizeUserText(str) {
+            // <, > (태그 생성), " ' (속성/onclick 문자열 탈출), ` (템플릿 리터럴 탈출)만 제거합니다.
+            // &는 여기서 제거해도 실제 위험을 막지 못하면서 "H&H CC"류의 정상적인 이름만 깨뜨리므로 남겨둡니다.
+            return String(str || '').replace(/[<>"'`]/g, '').trim();
         }
 
         // 코스명 입력칸 커스텀 자동완성. 전국 골프장 이름뿐 아니라 GOLF_COURSE_ALIASES에 등록된
@@ -3778,7 +3796,7 @@
                 const formattedDate = `${dateParts[1]}/${dateParts[2]}`;
                 const formData = new FormData(e.target);
 
-                const courseName = document.getElementById('crNewRoundCourseName').value.trim();
+                const courseName = sanitizeUserText(document.getElementById('crNewRoundCourseName').value);
 
                 const dataByPlayer = {};
                 PLAYERS.forEach(player => {
@@ -3822,7 +3840,7 @@
                 const formattedDate = CR_DATES[dateIdx];
                 const formData = new FormData(e.target);
 
-                const courseName = document.getElementById('crEditRoundCourseName').value.trim();
+                const courseName = sanitizeUserText(document.getElementById('crEditRoundCourseName').value);
 
                 const dataByPlayer = {};
                 PLAYERS.forEach(player => {
@@ -4483,7 +4501,7 @@
                     current = {
                         id: genScoreCardId(),
                         date: `${y}-${('0' + m).slice(-2)}-${('0' + d).slice(-2)}`,
-                        course: rest ? rest.trim() : '',
+                        course: rest ? sanitizeUserText(rest) : '',
                         score: null,
                         overPar: null
                     };
@@ -4504,7 +4522,7 @@
                 }
 
                 if (current && !current.course) {
-                    current.course = line;
+                    current.course = sanitizeUserText(line);
                     return;
                 }
                 // 그 외 줄은 인식 대상이 아니므로 건너뜁니다.
@@ -4527,7 +4545,7 @@
                     byPlayer[row.player].push({
                         id: String(row.id || ''),
                         date: String(row.date).trim(),
-                        course: row.course || '',
+                        course: sanitizeUserText(row.course || ''),
                         score: parseFloat(row.score),
                         overPar: (row.overPar !== undefined && row.overPar !== '' && row.overPar !== null) ? parseInt(row.overPar, 10) : null
                     });
@@ -4551,7 +4569,7 @@
                 await fetch(SHEET_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ type: 'screenScoreCard', records })
+                    body: JSON.stringify({ type: 'screenScoreCard', records, token: adminApiToken })
                 });
             } catch (err) {
                 console.warn('구글 시트에 스코어 카드 저장을 실패해 이 브라우저에만 저장됩니다.', err);
@@ -4564,7 +4582,7 @@
                 await fetch(SHEET_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ type: 'screenScoreCard', action: 'delete', id })
+                    body: JSON.stringify({ type: 'screenScoreCard', action: 'delete', id, token: adminApiToken })
                 });
             } catch (err) {
                 console.warn('구글 시트에서 스코어 카드 삭제를 실패해 이 브라우저에만 반영됩니다.', err);
