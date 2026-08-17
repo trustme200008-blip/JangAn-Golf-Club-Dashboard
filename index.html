@@ -985,21 +985,26 @@
         <!-- Controls Section -->
         <div class="glass-panel p-3.5 sm:p-5 rounded-2xl shadow-xl flex flex-col gap-3.5">
             <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
-                <div class="flex items-center justify-between gap-2 bg-slate-900/90 border border-slate-700 px-3 py-2 rounded-xl text-xs sm:text-sm">
-                    <div class="flex items-center gap-2 flex-1 min-w-0">
-                        <svg class="inline-block align-[-0.15em] shrink-0 text-emerald-400 text-sm sm:text-base shrink-0" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
-                        <label for="crDateSelect" class="text-slate-400 font-medium whitespace-nowrap shrink-0">라운드 일자:</label>
-                        <select id="crDateSelect" class="w-full bg-slate-800/90 border border-slate-700 font-bold text-emerald-300 focus:outline-none focus:border-emerald-500 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm cursor-pointer shadow-inner">
-                            <!-- JS Populated -->
-                        </select>
-                    </div>
-                    <div class="flex items-center gap-1 shrink-0 ml-2">
-                        <button id="crPrevDateBtn" class="px-2.5 py-1 bg-slate-800 active:bg-slate-700 hover:bg-slate-700 rounded-lg text-slate-300 transition text-xs font-semibold min-h-[32px]" title="이전 라운드">
-                            <svg class="inline-block align-[-0.15em] shrink-0" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                        </button>
-                        <button id="crNextDateBtn" class="px-2.5 py-1 bg-slate-800 active:bg-slate-700 hover:bg-slate-700 rounded-lg text-slate-300 transition text-xs font-semibold min-h-[32px]" title="다음 라운드">
-                            <svg class="inline-block align-[-0.15em] shrink-0" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                        </button>
+                <div class="flex items-center gap-2">
+                    <select id="crYearSelect" class="shrink-0 bg-slate-900 border border-slate-700 text-emerald-300 text-xs sm:text-sm font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-emerald-500 cursor-pointer">
+                        <!-- JS Populated -->
+                    </select>
+                    <div class="flex items-center justify-between gap-2 bg-slate-900/90 border border-slate-700 px-3 py-2 rounded-xl text-xs sm:text-sm flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-1 min-w-0">
+                            <svg class="inline-block align-[-0.15em] shrink-0 text-emerald-400 text-sm sm:text-base shrink-0" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
+                            <label for="crDateSelect" class="text-slate-400 font-medium whitespace-nowrap shrink-0">라운드 일자:</label>
+                            <select id="crDateSelect" class="w-full bg-slate-800/90 border border-slate-700 font-bold text-emerald-300 focus:outline-none focus:border-emerald-500 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm cursor-pointer shadow-inner">
+                                <!-- JS Populated -->
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0 ml-2">
+                            <button id="crPrevDateBtn" class="px-2.5 py-1 bg-slate-800 active:bg-slate-700 hover:bg-slate-700 rounded-lg text-slate-300 transition text-xs font-semibold min-h-[32px]" title="이전 라운드">
+                                <svg class="inline-block align-[-0.15em] shrink-0" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                            </button>
+                            <button id="crNextDateBtn" class="px-2.5 py-1 bg-slate-800 active:bg-slate-700 hover:bg-slate-700 rounded-lg text-slate-300 transition text-xs font-semibold min-h-[32px]" title="다음 라운드">
+                                <svg class="inline-block align-[-0.15em] shrink-0" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -1034,7 +1039,7 @@
         <!-- 아직 등록된 코스라운드가 없을 때 안내 -->
         <div id="crEmptyState" class="hidden glass-panel p-8 sm:p-10 rounded-2xl text-center">
             <svg class="inline-block align-[-0.15em] shrink-0 text-emerald-400/60 mb-3" style="width:2.5em;height:2.5em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><line x1="12" y1="13" x2="12" y2="20"/><line x1="8" y1="20" x2="16" y2="20"/></svg>
-            <p class="text-sm text-slate-300 font-medium mb-1">아직 등록된 코스라운드 기록이 없습니다.</p>
+            <p id="crEmptyStateText" class="text-sm text-slate-300 font-medium mb-1">아직 등록된 코스라운드 기록이 없습니다.</p>
             <p class="text-xs text-slate-400">관리자 모드로 전환한 뒤 "라운드 추가" 버튼으로 첫 기록을 등록해보세요.</p>
         </div>
 
@@ -1212,7 +1217,7 @@
                     <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2 mb-1">
                         <svg class="inline-block align-[-0.15em] shrink-0 text-emerald-400" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg> 코스라운드 순위
                     </h3>
-                    <p class="text-xs text-slate-400 mb-4"><span class="text-slate-300 font-semibold">2026년 평균</span> 기준 동호회원 순위입니다. 지표별로 <span class="text-slate-300 font-semibold">선택 라운드 · 최근 5회차 평균 · 2026년 평균</span> 세 가지를 함께 보여줍니다.</p>
+                    <p id="crRankDescText" class="text-xs text-slate-400 mb-4"><span class="text-slate-300 font-semibold">2026년 평균</span> 기준 동호회원 순위입니다. 지표별로 <span class="text-slate-300 font-semibold">선택 라운드 · 최근 5회차 평균 · 2026년 평균</span> 세 가지를 함께 보여줍니다.</p>
                     <div class="overflow-x-auto custom-scrollbar">
                         <table class="w-full text-left border-collapse min-w-[560px]">
                             <thead>
@@ -3737,10 +3742,20 @@
 
         // 코스명은 선수별 수치가 아니라 "라운드(날짜) 단위"로 하나만 기록되는 정보라
         // COURSE_METRICS와 별도로 CR_DATES 인덱스에 맞춰 관리합니다.
-        let CR_COURSE_NAMES = []; // CR_DATES와 인덱스 일치
+        //
+        // ===== 연도 선택 데이터 구조 =====
+        // CR_*_ALL: 모든 연도를 통틀은 원본 데이터(진짜 소스, "YYYY-MM-DD" 전체 날짜).
+        // CR_DATES/CR_DATA/CR_COURSE_NAMES: 그중 crSelectedYear 연도만 걸러낸 "화면에 보여줄 뷰"입니다.
+        // 기존 렌더 함수들은 전부 CR_DATES/CR_DATA/CR_COURSE_NAMES만 보고 그리므로, 연도 필터링은
+        // crRebuildYearView() 한 곳에만 넣고 나머지 렌더 코드는 그대로 둘 수 있습니다.
+        let CR_COURSE_NAMES_ALL = []; // CR_DATES_ALL과 인덱스 일치
+        let CR_DATES_ALL = []; // "YYYY-MM-DD" 전체 날짜, 오름차순 정렬
+        let CR_DATA_ALL = {}; // CR_DATA_ALL[player][metricKey] = [값 배열, CR_DATES_ALL과 인덱스 일치]
 
-        let CR_DATES = [];
-        let CR_DATA = {}; // CR_DATA[player][metricKey] = [값 배열, CR_DATES와 인덱스 일치]
+        let CR_COURSE_NAMES = []; // CR_DATES와 인덱스 일치 (선택된 연도만)
+        let CR_DATES = []; // 선택된 연도만 (오름차순)
+        let CR_DATA = {}; // 선택된 연도만, CR_DATES와 인덱스 일치
+        let crSelectedYear = null; // "2026" 같은 문자열
         let crSelectedDateIndex = -1;
         let crActiveMode = 'single';
         let crTrendChart = null;
@@ -3749,6 +3764,19 @@
         let crCompareChart = null;
         const CR_CACHE_KEY = 'jangan_golf_course_round_cache_v1';
 
+        // CR_DATA_ALL[name] 쪽(전체 연도 원본) 배열을 CR_DATES_ALL 길이에 맞춰 채웁니다.
+        function ensureCRPlayerDataAll(name) {
+            if (!CR_DATA_ALL[name]) CR_DATA_ALL[name] = {};
+            COURSE_METRICS.forEach(m => {
+                if (!CR_DATA_ALL[name][m.key]) {
+                    CR_DATA_ALL[name][m.key] = CR_DATES_ALL.map(() => null);
+                }
+            });
+        }
+
+        // CR_DATA[name](현재 선택된 연도 뷰) 배열을 CR_DATES 길이에 맞춰 채웁니다.
+        // 정상 흐름에서는 crRebuildYearView()가 이미 채워두므로 대부분 아무것도 하지 않는
+        // 방어 코드지만, 렌더 함수들이 안전하게 호출할 수 있도록 그대로 남겨둡니다.
         function ensureCRPlayerData(name) {
             if (!CR_DATA[name]) CR_DATA[name] = {};
             COURSE_METRICS.forEach(m => {
@@ -3758,13 +3786,61 @@
             });
         }
 
+        // crSelectedYear에 해당하는 연도만 골라 CR_DATES/CR_DATA/CR_COURSE_NAMES(화면용 뷰)를
+        // 다시 만듭니다. CR_*_ALL을 수정한 뒤에는 항상 이 함수를 호출해야 화면이 갱신됩니다.
+        function crRebuildYearView() {
+            const idxs = [];
+            CR_DATES_ALL.forEach((d, i) => { if (d.slice(0, 4) === crSelectedYear) idxs.push(i); });
+            CR_DATES = idxs.map(i => CR_DATES_ALL[i]);
+            CR_COURSE_NAMES = idxs.map(i => CR_COURSE_NAMES_ALL[i]);
+            CR_DATA = {};
+            PLAYERS.forEach(player => {
+                ensureCRPlayerDataAll(player);
+                CR_DATA[player] = {};
+                COURSE_METRICS.forEach(m => {
+                    CR_DATA[player][m.key] = idxs.map(i => CR_DATA_ALL[player][m.key][i]);
+                });
+            });
+        }
+
+        // 실제 데이터에 존재하는 연도 목록을 최신순으로 반환합니다.
+        function crGetAvailableYears() {
+            const years = Array.from(new Set(CR_DATES_ALL.map(d => d.slice(0, 4)).filter(y => /^\d{4}$/.test(y))));
+            years.sort((a, b) => b.localeCompare(a));
+            return years;
+        }
+
+        // 연도 선택 <select>를 실제 데이터에 맞춰 채웁니다. crSelectedYear가 비어있거나
+        // 더 이상 존재하지 않는 연도면 가장 최신 연도로 보정합니다.
+        function crSyncYearSelectUI() {
+            const sel = document.getElementById('crYearSelect');
+            let years = crGetAvailableYears();
+            if (!years.length) years = [String(new Date().getFullYear())];
+            if (!crSelectedYear || !years.includes(crSelectedYear)) {
+                crSelectedYear = years[0];
+            }
+            if (sel) {
+                sel.innerHTML = years.map(y => `<option value="${y}" ${y === crSelectedYear ? 'selected' : ''}>${y}년</option>`).join('');
+            }
+        }
+
+        // 과거(연도 선택 기능이 생기기 전)에는 코스라운드 날짜를 "MM/DD"로만 저장했습니다.
+        // 그 형식으로 남아있는 값(로컬 캐시에 저장된 옛 기록)은 2026년 기록으로 간주해 연도를 붙입니다.
+        function crMigrateLegacyDate(d) {
+            if (typeof d === 'string' && /^\d{1,2}\/\d{1,2}$/.test(d)) {
+                const [mm, dd] = d.split('/');
+                return `2026-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
+            }
+            return d;
+        }
+
         function crLoadFromLocalCache() {
             try {
                 const saved = JSON.parse(localStorage.getItem(CR_CACHE_KEY) || 'null');
                 if (saved && Array.isArray(saved.dates) && saved.data) {
-                    CR_DATES = saved.dates;
-                    CR_DATA = saved.data;
-                    CR_COURSE_NAMES = Array.isArray(saved.courseNames) ? saved.courseNames : CR_DATES.map(() => '');
+                    CR_DATES_ALL = saved.dates.map(crMigrateLegacyDate);
+                    CR_DATA_ALL = saved.data;
+                    CR_COURSE_NAMES_ALL = Array.isArray(saved.courseNames) ? saved.courseNames : CR_DATES_ALL.map(() => '');
                 }
             } catch (err) {
                 console.warn('코스라운드 캐시를 불러오지 못했습니다.', err);
@@ -3772,59 +3848,81 @@
         }
 
         function crPersistLocalCache() {
-            localStorage.setItem(CR_CACHE_KEY, JSON.stringify({ dates: CR_DATES, data: CR_DATA, courseNames: CR_COURSE_NAMES }));
+            localStorage.setItem(CR_CACHE_KEY, JSON.stringify({ dates: CR_DATES_ALL, data: CR_DATA_ALL, courseNames: CR_COURSE_NAMES_ALL }));
         }
 
-        // 하나의 코스라운드(특정 날짜, 동호회원 전체 기록)를 CR_DATA/CR_DATES에 반영
-        function crApplyRoundData(formattedDate, dataByPlayer, courseName) {
-            let dateIdx = CR_DATES.indexOf(formattedDate);
+        // 하나의 코스라운드(특정 날짜, 동호회원 전체 기록)를 CR_DATA_ALL/CR_DATES_ALL(전체 연도
+        // 원본)에 반영하고, 화면에 보이는 뷰(CR_DATES 등)도 함께 갱신합니다. fullDate는
+        // "YYYY-MM-DD" 형식이어야 합니다.
+        function crApplyRoundData(fullDate, dataByPlayer, courseName) {
+            let dateIdx = CR_DATES_ALL.indexOf(fullDate);
             if (dateIdx === -1) {
-                CR_DATES.push(formattedDate);
-                CR_DATES.sort((a, b) => new Date(`2026/${a}`) - new Date(`2026/${b}`));
-                dateIdx = CR_DATES.indexOf(formattedDate);
-                CR_COURSE_NAMES.splice(dateIdx, 0, courseName || '');
+                CR_DATES_ALL.push(fullDate);
+                CR_DATES_ALL.sort(); // "YYYY-MM-DD"는 문자열 그대로 정렬해도 날짜순이 됩니다.
+                dateIdx = CR_DATES_ALL.indexOf(fullDate);
+                CR_COURSE_NAMES_ALL.splice(dateIdx, 0, courseName || '');
                 PLAYERS.forEach(player => {
-                    ensureCRPlayerData(player);
+                    ensureCRPlayerDataAll(player);
                     COURSE_METRICS.forEach(m => {
                         const d = dataByPlayer[player];
                         const val = (d && d[m.key] !== undefined && !isNaN(d[m.key])) ? d[m.key] : null;
-                        CR_DATA[player][m.key].splice(dateIdx, 0, val);
+                        CR_DATA_ALL[player][m.key].splice(dateIdx, 0, val);
                     });
                 });
             } else {
-                if (courseName) CR_COURSE_NAMES[dateIdx] = courseName;
+                if (courseName) CR_COURSE_NAMES_ALL[dateIdx] = courseName;
                 PLAYERS.forEach(player => {
                     const d = dataByPlayer[player];
                     if (!d) return;
-                    ensureCRPlayerData(player);
+                    ensureCRPlayerDataAll(player);
                     COURSE_METRICS.forEach(m => {
                         if (d[m.key] !== undefined && !isNaN(d[m.key])) {
-                            CR_DATA[player][m.key][dateIdx] = d[m.key];
+                            CR_DATA_ALL[player][m.key][dateIdx] = d[m.key];
                         }
                     });
                 });
             }
             crPersistLocalCache();
-            return dateIdx;
+            crRebuildYearView();
+            return dateIdx; // CR_DATES_ALL 기준 인덱스입니다. 화면(CR_DATES) 인덱스는
+                             // 호출부에서 CR_DATES.indexOf(fullDate)로 다시 구해야 합니다.
         }
 
-        // dateIdx 회차를 CR_DATES/CR_DATA/CR_COURSE_NAMES에서 완전히 제거합니다 (되돌릴 수 없음).
-        function crDeleteRoundLocally(dateIdx) {
-            if (dateIdx < 0 || dateIdx >= CR_DATES.length) return null;
-            const date = CR_DATES[dateIdx];
-            CR_DATES.splice(dateIdx, 1);
-            CR_COURSE_NAMES.splice(dateIdx, 1);
+        // date(전체 날짜 문자열) 하나를 CR_DATES_ALL/CR_DATA_ALL/CR_COURSE_NAMES_ALL에서 완전히
+        // 제거합니다 (되돌릴 수 없음). 인덱스가 아니라 날짜 문자열을 받는 이유는, 화면 뷰(CR_DATES)의
+        // 인덱스와 전체 데이터(CR_DATES_ALL)의 인덱스가 연도 선택에 따라 달라 혼동하기 쉽기 때문입니다.
+        function crDeleteRoundLocally(date) {
+            const allIdx = CR_DATES_ALL.indexOf(date);
+            if (allIdx === -1) return null;
+            CR_DATES_ALL.splice(allIdx, 1);
+            CR_COURSE_NAMES_ALL.splice(allIdx, 1);
             PLAYERS.forEach(player => {
-                ensureCRPlayerData(player);
+                ensureCRPlayerDataAll(player);
                 COURSE_METRICS.forEach(m => {
-                    if (CR_DATA[player][m.key]) CR_DATA[player][m.key].splice(dateIdx, 1);
+                    if (CR_DATA_ALL[player][m.key]) CR_DATA_ALL[player][m.key].splice(allIdx, 1);
                 });
             });
             crPersistLocalCache();
+            crRebuildYearView();
             return date;
         }
 
         // ===== 구글 시트 백엔드 연동 (코스라운드) =====
+        // 코스라운드 전용 날짜 정규화. screenGolf가 쓰는 normalizeSheetDate와 달리 연도를
+        // 보존합니다 (코스라운드는 연도 선택 기능으로 여러 해의 기록이 함께 쌓이기 때문입니다).
+        // 연도 선택 기능을 추가하기 전까지는 모든 코스라운드 기록이 "MM/DD"로만 저장돼
+        // 있었으므로, 그 형식으로 온 값(과거 기록)은 2026년으로 간주해 연도를 붙여줍니다.
+        function normalizeCourseRoundSheetDate(dateValue) {
+            const str = String(dateValue).trim();
+            const isoMatch = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+            if (isoMatch) return `${isoMatch[1]}-${isoMatch[2].padStart(2, '0')}-${isoMatch[3].padStart(2, '0')}`;
+            if (/^\d{1,2}\/\d{1,2}$/.test(str)) {
+                const [mm, dd] = str.split('/');
+                return `2026-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
+            }
+            return str;
+        }
+
         async function loadCourseRoundsFromSheet() {
             if (!hasSheetBackend()) return;
             try {
@@ -3835,7 +3933,7 @@
                 const courseNameByDate = {};
                 rows.forEach(row => {
                     if (!row.date || !row.player) return;
-                    const date = normalizeSheetDate(row.date);
+                    const date = normalizeCourseRoundSheetDate(row.date);
                     if (!byDate[date]) byDate[date] = {};
                     const rec = {};
                     COURSE_METRICS.forEach(m => { rec[m.key] = parseFloat(row[m.key]); });
@@ -3848,9 +3946,11 @@
                 // 남아있고 시트에는 없는 회차 — 다른 기기/브라우저에서 이미 삭제됐거나, 시트 연동 전에
                 // 이 브라우저에서만 임시로 저장된 테스트 기록 등 — 는 여기서 함께 정리합니다.
                 // 그렇지 않으면 "관리자 모드에서 삭제해도 이 브라우저에서는 계속 남아있는" 문제가 생깁니다.
-                for (let i = CR_DATES.length - 1; i >= 0; i--) {
-                    if (!byDate[CR_DATES[i]]) crDeleteRoundLocally(i);
+                // (연도 필터로 화면에 안 보이는 다른 해의 기록도 정리 대상이므로 CR_DATES_ALL을 봅니다.)
+                for (let i = CR_DATES_ALL.length - 1; i >= 0; i--) {
+                    if (!byDate[CR_DATES_ALL[i]]) crDeleteRoundLocally(CR_DATES_ALL[i]);
                 }
+                crSyncYearSelectUI();
                 if (crSelectedDateIndex >= CR_DATES.length) crSelectedDateIndex = CR_DATES.length - 1;
             } catch (err) {
                 console.warn('구글 시트에서 코스라운드를 불러오지 못해 로컬 데이터로만 표시합니다.', err);
@@ -3886,7 +3986,9 @@
 
         function initCourseRoundModule() {
             crLoadFromLocalCache();
-            PLAYERS.forEach(ensureCRPlayerData);
+            PLAYERS.forEach(ensureCRPlayerDataAll);
+            crSyncYearSelectUI();
+            crRebuildYearView();
 
             crRenderMetricSelects();
             crSetupCourseNameAutocomplete('crNewRoundCourseName', 'crNewRoundCourseNameSuggest');
@@ -3960,7 +4062,7 @@
         }
 
         function buildCourseRoundShareText(formattedDate, dataByPlayer, courseName) {
-            const lines = ['라운드가 추가되었습니다.', `⛳ 2026-${formattedDate.replace('/', '-')} 코스라운드${courseName ? ' (' + courseName + ')' : ''}`];
+            const lines = ['라운드가 추가되었습니다.', `⛳ ${formattedDate} 코스라운드${courseName ? ' (' + courseName + ')' : ''}`];
             PLAYERS.forEach(player => {
                 const rec = dataByPlayer[player];
                 if (!rec) return;
@@ -4066,13 +4168,20 @@
 
         function crRenderEditRoundDateOptions() {
             const sel = document.getElementById('crEditRoundDateSelect');
-            sel.innerHTML = CR_DATES.map((dateStr, idx) => `<option value="${idx}">2026-${dateStr.replace('/', '-')} (${idx + 1}회차)</option>`).join('');
+            sel.innerHTML = CR_DATES.map((dateStr, idx) => `<option value="${idx}">${dateStr} (${idx + 1}회차)</option>`).join('');
         }
 
         function crSetupEventListeners() {
             const dateSelectEl = document.getElementById('crDateSelect');
             const prevBtn = document.getElementById('crPrevDateBtn');
             const nextBtn = document.getElementById('crNextDateBtn');
+
+            document.getElementById('crYearSelect').addEventListener('change', (e) => {
+                crSelectedYear = e.target.value;
+                crRebuildYearView();
+                crSelectedDateIndex = CR_DATES.length - 1; // 선택한 연도의 가장 최근 회차로 이동
+                crRenderAll();
+            });
 
             dateSelectEl.addEventListener('change', (e) => {
                 crSelectedDateIndex = parseInt(e.target.value, 10);
@@ -4105,7 +4214,11 @@
             // 등록 모달
             const addModal = document.getElementById('crAddRoundModal');
             document.getElementById('crOpenAddModalBtn').addEventListener('click', () => {
-                document.getElementById('crNewRoundDate').value = new Date().toISOString().split('T')[0];
+                const today = new Date().toISOString().split('T')[0];
+                // 지금 보고 있는 연도가 실제 오늘 연도와 다르면(예: 2024년 데이터를 보는 중),
+                // 매번 오늘 날짜로 튀지 않도록 그 연도의 1월 1일을 기본값으로 잡아줍니다.
+                document.getElementById('crNewRoundDate').value =
+                    crSelectedYear && crSelectedYear !== today.slice(0, 4) ? `${crSelectedYear}-01-01` : today;
                 document.getElementById('crNewRoundCourseName').value = '';
                 crRenderPlayerInputs('crPlayerInputsContainer', null);
                 addModal.classList.remove('hidden');
@@ -4116,10 +4229,8 @@
 
             document.getElementById('crAddRoundForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const rawDate = document.getElementById('crNewRoundDate').value;
-                if (!rawDate) return;
-                const dateParts = rawDate.split('-');
-                const formattedDate = `${dateParts[1]}/${dateParts[2]}`;
+                const formattedDate = document.getElementById('crNewRoundDate').value; // "YYYY-MM-DD"
+                if (!formattedDate) return;
                 const formData = new FormData(e.target);
 
                 const courseName = sanitizeUserText(document.getElementById('crNewRoundCourseName').value);
@@ -4131,8 +4242,15 @@
                     dataByPlayer[player] = rec;
                 });
 
-                const dateIdx = crApplyRoundData(formattedDate, dataByPlayer, courseName);
-                crSelectedDateIndex = dateIdx;
+                crApplyRoundData(formattedDate, dataByPlayer, courseName);
+                // 추가한 라운드가 지금 보고 있는 연도와 다르면, 바로 보이도록 연도 선택을 맞춰줍니다.
+                const addedYear = formattedDate.slice(0, 4);
+                if (addedYear !== crSelectedYear) {
+                    crSelectedYear = addedYear;
+                    crRebuildYearView();
+                }
+                crSyncYearSelectUI();
+                crSelectedDateIndex = CR_DATES.indexOf(formattedDate);
                 crRenderAll();
                 closeAddModal();
                 await saveCourseRoundToSheet(formattedDate, dataByPlayer, courseName);
@@ -4140,7 +4258,7 @@
                 // 카톡 등에 바로 공유할 수 있도록 "문자 복사" 버튼이 달린 안내 토스트를 띄움
                 showRoundNotification(
                     '라운드가 추가되었습니다',
-                    `2026-${formattedDate.replace('/', '-')} 코스라운드 결과를 문자로 복사할 수 있습니다.`,
+                    `${formattedDate} 코스라운드 결과를 문자로 복사할 수 있습니다.`,
                     buildCourseRoundShareText(formattedDate, dataByPlayer, courseName)
                 );
             });
@@ -4195,10 +4313,10 @@
                 if (isNaN(dateIdx) || !CR_DATES[dateIdx]) return;
                 const formattedDate = CR_DATES[dateIdx];
                 const courseName = CR_COURSE_NAMES[dateIdx];
-                const label = `2026-${formattedDate.replace('/', '-')}${courseName ? ' · ' + courseName : ''}`;
+                const label = `${formattedDate}${courseName ? ' · ' + courseName : ''}`;
                 if (!confirm(`${label} 코스라운드 기록을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
 
-                crDeleteRoundLocally(dateIdx);
+                crDeleteRoundLocally(formattedDate);
                 if (crSelectedDateIndex >= CR_DATES.length) crSelectedDateIndex = CR_DATES.length - 1;
                 if (crSelectedDateIndex < 0) crSelectedDateIndex = 0;
                 crRenderAll();
@@ -4244,6 +4362,12 @@
             if (!emptyEl || !wrapEl) return; // 코스라운드 모듈 초기화 전
             emptyEl.classList.toggle('hidden', hasData);
             wrapEl.classList.toggle('hidden', !hasData);
+            const emptyTextEl = document.getElementById('crEmptyStateText');
+            if (emptyTextEl) {
+                emptyTextEl.textContent = CR_DATES_ALL.length > 0
+                    ? `${crSelectedYear}년에 등록된 코스라운드 기록이 없습니다. 위에서 다른 연도를 선택해보세요.`
+                    : '아직 등록된 코스라운드 기록이 없습니다.';
+            }
             if (!hasData) return;
 
             if (crSelectedDateIndex < 0 || crSelectedDateIndex >= CR_DATES.length) {
@@ -4262,7 +4386,7 @@
             const sel = document.getElementById('crDateSelect');
             sel.innerHTML = CR_DATES.map((dateStr, idx) => `
                 <option value="${idx}" ${idx === crSelectedDateIndex ? 'selected' : ''}>
-                    2026-${dateStr.replace('/', '-')} (${idx + 1}회차)${CR_COURSE_NAMES[idx] ? ' · ' + CR_COURSE_NAMES[idx] : ''}
+                    ${dateStr} (${idx + 1}회차)${CR_COURSE_NAMES[idx] ? ' · ' + CR_COURSE_NAMES[idx] : ''}
                 </option>
             `).join('');
         }
@@ -4275,7 +4399,7 @@
             const courseName = CR_COURSE_NAMES[idx];
 
             document.getElementById('crPlayerAvatar').textContent = selectedPlayer;
-            document.getElementById('crSingleTitle').innerHTML = `${selectedPlayer} 플레이어 <span class="text-slate-400 text-xs sm:text-sm font-normal whitespace-nowrap">(2026-${dateStr.replace('/', '-')}${courseName ? ' · ' + courseName : ''})</span>`;
+            document.getElementById('crSingleTitle').innerHTML = `${selectedPlayer} 플레이어 <span class="text-slate-400 text-xs sm:text-sm font-normal whitespace-nowrap">(${dateStr}${courseName ? ' · ' + courseName : ''})</span>`;
 
             const primary = COURSE_METRICS[0];
             const avgLabelEl = document.getElementById('crPlayerAvgLabel');
@@ -4338,7 +4462,7 @@
                 const date = CR_DATES[idx];
                 return `
                 <tr class="hover:bg-slate-800/50 transition ${idx === crSelectedDateIndex ? 'bg-emerald-900/30 text-emerald-200' : ''}">
-                    <td class="p-3 text-slate-300 font-semibold whitespace-nowrap">2026-${date.replace('/', '-')}</td>
+                    <td class="p-3 text-slate-300 font-semibold whitespace-nowrap">${date}</td>
                     <td class="p-3 text-slate-400 whitespace-nowrap">${CR_COURSE_NAMES[idx] || '-'}</td>
                     <td class="p-3 whitespace-nowrap">${selectedPlayer}</td>
                     ${COURSE_METRICS.map(m => {
@@ -4354,7 +4478,7 @@
             const idx = crSelectedDateIndex;
             const dateStr = CR_DATES[idx] || '-';
             const courseName = CR_COURSE_NAMES[idx];
-            document.getElementById('crCompareDateTitle').textContent = `2026-${dateStr.replace('/', '-')}${courseName ? ' · ' + courseName : ''}`;
+            document.getElementById('crCompareDateTitle').textContent = `${dateStr}${courseName ? ' · ' + courseName : ''}`;
 
             document.getElementById('crCompareTableHead').innerHTML = `<th class="p-3">플레이어</th>` +
                 COURSE_METRICS.map(m => `<th class="p-3 text-center">${m.label}${m.unit ? ' (' + m.unit + ')' : ''}</th>`).join('');
@@ -4433,7 +4557,7 @@
             crTrendChart = new Chart(canvas, {
                 type: 'line',
                 data: {
-                    labels: CR_DATES.map(d => '2026-' + d.replace('/', '-')),
+                    labels: CR_DATES.slice(),
                     datasets: [{
                         label: metric.label,
                         data: dataSet,
@@ -4490,7 +4614,7 @@
             crCompanionTrendChart = new Chart(canvas, {
                 type: 'line',
                 data: {
-                    labels: CR_DATES.map(d => '2026-' + d.replace('/', '-')),
+                    labels: CR_DATES.slice(),
                     datasets: datasets
                 },
                 options: {
@@ -4536,10 +4660,9 @@
             return picked; // 최신 회차 순으로, 최대 count개
         }
 
-        // 특정 선수의 해당 지표 "연간 평균"을 계산합니다. 0/미기록 회차는 제외합니다.
-        // 참고: 현재 데이터 모델은 날짜를 "MM/DD" 형식(연도 없음)으로만 저장하고 있어
-        // 실질적으로 전체 기록 = 2026년 기록입니다. 추후 연도 데이터가 별도로 쌓이게 되면
-        // 이 함수를 연도 필터링 로직으로 교체하면 됩니다.
+        // 특정 선수의 해당 지표 "선택된 연도(crSelectedYear) 평균"을 계산합니다. 0/미기록 회차는
+        // 제외합니다. CR_DATA는 crRebuildYearView()에서 이미 선택된 연도만 걸러낸 값이므로,
+        // 이 함수는 그 값을 그대로 평균 내기만 하면 됩니다.
         function crGetPlayerYearAvg(player, metricKey) {
             ensureCRPlayerData(player);
             const arr = CR_DATA[player][metricKey] || [];
@@ -4718,9 +4841,9 @@
         function crRenderRankView() {
             const idx = crSelectedDateIndex;
             const primary = COURSE_METRICS[0];
-            // 순위는 "2026년 평균"(연간 누적 평균) 기준입니다. 0/미기록 회차는
+            // 순위는 "선택 연도 평균"(crSelectedYear 기준 누적 평균) 기준입니다. 0/미기록 회차는
             // crGetPlayerYearAvg 내부에서 이미 제외하고 계산됩니다.
-            // 2026년 평균 기록이 아예 없는 선수(한 번도 안 뛴 경우)는 표에서 빼지 않고
+            // 선택 연도 평균 기록이 아예 없는 선수(한 번도 안 뛴 경우)는 표에서 빼지 않고
             // 순위 없이("-") 목록 아래에 표시하며, 그래도 선택 라운드/최근5회 값이 있으면 함께 보여줍니다.
             const rows = PLAYERS.map(player => {
                 ensureCRPlayerData(player);
@@ -4728,7 +4851,7 @@
                 return { player, val };
             });
 
-            // 2026년 평균이 있는 선수는 그 값 기준으로 정렬, 없는 선수는 뒤로.
+            // 선택 연도 평균이 있는 선수는 그 값 기준으로 정렬, 없는 선수는 뒤로.
             rows.sort((a, b) => {
                 if (a.val == null && b.val == null) return 0;
                 if (a.val == null) return 1;
@@ -4736,7 +4859,12 @@
                 return primary.better === 'low' ? (a.val - b.val) : (b.val - a.val);
             });
 
-            // 지표별로 "선택 라운드 값 / 최근 5회차 평균 / 2026년 평균" 3열을 함께 보여줍니다.
+            const rankDescEl = document.getElementById('crRankDescText');
+            if (rankDescEl) {
+                rankDescEl.innerHTML = `<span class="text-slate-300 font-semibold">${crSelectedYear}년 평균</span> 기준 동호회원 순위입니다. 지표별로 <span class="text-slate-300 font-semibold">선택 라운드 · 최근 5회차 평균 · ${crSelectedYear}년 평균</span> 세 가지를 함께 보여줍니다.`;
+            }
+
+            // 지표별로 "선택 라운드 값 / 최근 5회차 평균 / 선택 연도 평균" 3열을 함께 보여줍니다.
             document.getElementById('crRankTableGroupHead').innerHTML =
                 `<th class="p-3 whitespace-nowrap" rowspan="2">순위</th><th class="p-3 whitespace-nowrap" rowspan="2">플레이어</th>` +
                 COURSE_METRICS.map(m => `<th class="p-2 text-center border-l border-slate-800 whitespace-nowrap" colspan="3">${m.label}${m.unit ? `(${m.unit})` : ''}</th>`).join('');
@@ -4744,7 +4872,7 @@
                 COURSE_METRICS.map(() => `
                     <th class="p-2 text-center font-normal border-l border-slate-800 whitespace-nowrap">선택 라운드</th>
                     <th class="p-2 text-center font-normal whitespace-nowrap">최근 5회 평균</th>
-                    <th class="p-2 text-center font-normal whitespace-nowrap">2026년 평균</th>
+                    <th class="p-2 text-center font-normal whitespace-nowrap">${crSelectedYear}년 평균</th>
                 `).join('');
 
             const tbody = document.getElementById('crRankTableBody');
@@ -5143,15 +5271,17 @@
 
                 const crRes = await fetch(SHEET_API_URL + '?type=courseRounds');
                 const crRows = await crRes.json();
-                const crDates = new Set(crRows.map(r => normalizeSheetDate(r.date)).filter(Boolean));
-                const knownCrDates = new Set(CR_DATES);
+                const crDates = new Set(crRows.map(r => normalizeCourseRoundSheetDate(r.date)).filter(Boolean));
+                // 연도 선택으로 화면(CR_DATES)엔 안 보일 수 있는 다른 해의 새 기록도 놓치지 않도록
+                // 전체 데이터(CR_DATES_ALL) 기준으로 비교합니다.
+                const knownCrDates = new Set(CR_DATES_ALL);
                 const newCrDates = Array.from(crDates).filter(d => !knownCrDates.has(d)).sort();
 
                 if (newCrDates.length) {
                     await loadCourseRoundsFromSheet();
                     if (crSelectedDateIndex >= CR_DATES.length) crSelectedDateIndex = CR_DATES.length - 1;
                     crRenderAll();
-                    newCrDates.forEach(d => showRoundNotification('새 코스라운드', `2026-${d.replace('/', '-')} 라운드가 추가되었습니다.`));
+                    newCrDates.forEach(d => showRoundNotification('새 코스라운드', `${d} 라운드가 추가되었습니다.`));
                 }
             } catch (err) {
                 console.warn('새 라운드 확인 중 오류가 발생했습니다.', err);

@@ -14,11 +14,14 @@
  * 5. 배포 목록에서 연필(편집) 아이콘 클릭 → "버전"을 "새 버전"으로 선택 → "배포".
  *    (⚠️ "새 배포"가 아니라 기존 배포를 "편집"해야 웹앱 URL이 그대로 유지됩니다.)
  * 6. 완료되면 시트 파일에 아래 탭들이 사용됩니다:
- *    - Rounds         : date, player, gHandicap, fir, gir, putt, distance  (기존 스크린골프 데이터 탭)
- *    - CourseRounds   : date, player, handicap  (지표를 추가하면 열이 자동으로 늘어납니다. 신규 생성)
+ *    - Rounds         : date, player, gHandicap, fir, gir, putt, distance  (기존 스크린골프 데이터 탭.
+ *      날짜는 "MM/DD"만 저장합니다 — 스크린골프는 연도 선택 기능이 없습니다)
+ *    - CourseRounds   : date, player, handicap  (지표를 추가하면 열이 자동으로 늘어납니다.
+ *      코스라운드는 연도 선택 기능이 있어 날짜를 "YYYY-MM-DD" 전체로 저장합니다 — 예전에
+ *      "MM/DD"로만 저장됐던 기록은 읽거나 쓸 때 자동으로 2026년 기록으로 치유됩니다)
  *    - Players        : name  (신규 생성)
  *    - ScreenScoreCard: id, date, player, course, score  (스크린골프 스코어 카드, 신규 생성.
- *      날짜는 "YYYY-MM-DD" 전체 날짜를 그대로 저장합니다 — 다른 탭의 "MM/DD"와 다르니 주의)
+ *      날짜는 "YYYY-MM-DD" 전체 날짜를 그대로 저장합니다 — Rounds 탭의 "MM/DD"와 다르니 주의)
  *
  * 스크린골프 기존 데이터 탭 이름은 SHEET_NAMES.screenGolf 값과 반드시 일치해야 합니다.
  * (장안 골프 동호회 시트 기준 실제 탭 이름은 "Rounds" 입니다 — 이미 반영되어 있습니다.)
@@ -140,9 +143,12 @@ function normalizeDateCell(value) {
 // 주의: 서식은 "현재 데이터가 있는 행"뿐 아니라 시트의 최대 행(sheet.getMaxRows(), 기본 1000행)까지
 // 미리 걸어둬야 합니다. 그래야 이 함수 실행 시점 이후에 새로 append되는 행도(그 시점엔 아직
 // 값이 없어 이 함수가 못 봄) 자동으로 날짜 타입으로 바뀌는 걸 막을 수 있습니다.
-// normalizeFn은 기본값 normalizeDateCell("MM/dd")이며, ScreenScoreCard처럼 연도까지 보존해야
-// 하는 시트는 normalizeFullDateCell을 넘겨줍니다.
-function ensureDateColumnAsText(sheet, headers, normalizeFn) {
+// normalizeFn은 기본값 normalizeDateCell("MM/dd")이며, ScreenScoreCard/CourseRounds처럼
+// 연도까지 보존해야 하는 시트는 normalizeFullDateCell 계열을 넘겨줍니다.
+// migrateLegacyText를 true로 넘기면, 이미 텍스트로 저장된 값도 normalizeFn을 거쳐 형식이
+// 바뀌면 다시 써서 치유합니다 (CourseRounds가 "MM/DD"만 쓰던 시절 데이터를
+// "YYYY-MM-DD"로 옮길 때 씁니다). 기본은 false로, 기존 시트들의 동작은 그대로 유지됩니다.
+function ensureDateColumnAsText(sheet, headers, normalizeFn, migrateLegacyText) {
   normalizeFn = normalizeFn || normalizeDateCell;
   const dateCol = headers.indexOf('date');
   if (dateCol === -1) return;
@@ -162,6 +168,14 @@ function ensureDateColumnAsText(sheet, headers, normalizeFn) {
     if (v instanceof Date) {
       changed = true;
       return [normalizeFn(v)];
+    }
+    if (migrateLegacyText && typeof v === 'string' && v) {
+      const stripped = v.charAt(0) === "'" ? v.slice(1) : v;
+      const norm = normalizeFn(stripped);
+      if (norm !== stripped) {
+        changed = true;
+        return ["'" + norm];
+      }
     }
     return [v];
   });
@@ -183,24 +197,47 @@ function normalizeFullDateCell(value) {
   return str;
 }
 
+// CourseRounds 전용 날짜 정규화. normalizeFullDateCell과 같이 연도를 보존하되, 연도 선택
+// 기능이 생기기 전(모든 기록이 "MM/DD"로만 저장되던 시절)의 값은 2026년 기록으로 간주해
+// 연도를 붙여줍니다. ensureDateColumnAsText(migrateLegacyText=true)와 함께 쓰면 시트에
+// 남아있는 옛 "MM/DD" 값도 "2026-MM-DD"로 자동 치유됩니다.
+function normalizeCourseRoundDateCell(value) {
+  const full = normalizeFullDateCell(value);
+  if (/^\d{1,2}\/\d{1,2}$/.test(full)) {
+    const parts = full.split('/');
+    const mm = ('0' + parts[0]).slice(-2);
+    const dd = ('0' + parts[1]).slice(-2);
+    return `2026-${mm}-${dd}`;
+  }
+  return full;
+}
+
+// screenGolf(Rounds)는 지금도 "MM/DD"만 씁니다. courseRounds만 연도 선택 기능 때문에
+// "YYYY-MM-DD" 전체 날짜를 씁니다(과거 "MM/DD" 기록은 자동으로 2026년으로 치유됩니다).
+function getDateNormalizer(type) {
+  return type === 'courseRounds' ? normalizeCourseRoundDateCell : normalizeDateCell;
+}
+
 // date + player 조합이 이미 있으면 해당 행을 덮어쓰고, 없으면 새 행을 추가합니다.
 // records 안에 시트에 없는 새로운 필드(지표)가 있으면 열을 자동으로 추가합니다.
 // -> 프론트엔드 COURSE_METRICS에 지표를 추가해도 이 스크립트는 수정할 필요가 없습니다.
 function saveRoundRecords(type, date, records) {
   const sheet = getOrCreateSheet(type);
   ensureColumns(sheet, records);
-  ensureDateColumnAsText(sheet, sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim()));
+  const normalizeFn = getDateNormalizer(type);
+  const initialHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
+  ensureDateColumnAsText(sheet, initialHeaders, normalizeFn, type === 'courseRounds');
 
   const values = sheet.getDataRange().getValues();
   const headers = values[0].map(h => String(h).trim());
   const dateCol = headers.indexOf('date');
   const playerCol = headers.indexOf('player');
-  const normDate = normalizeDateCell(date);
+  const normDate = normalizeFn(date);
 
   records.forEach(record => {
     let rowIndex = -1;
     for (let i = 1; i < values.length; i++) {
-      if (normalizeDateCell(values[i][dateCol]) === normDate && String(values[i][playerCol]) === String(record.player)) {
+      if (normalizeFn(values[i][dateCol]) === normDate && String(values[i][playerCol]) === String(record.player)) {
         rowIndex = i;
         break;
       }
@@ -232,15 +269,16 @@ function deleteRoundRecords(type, date) {
   let values = sheet.getDataRange().getValues();
   if (values.length < 2) return;
   let headers = values[0].map(h => String(h).trim());
-  ensureDateColumnAsText(sheet, headers);
+  const normalizeFn = getDateNormalizer(type);
+  ensureDateColumnAsText(sheet, headers, normalizeFn, type === 'courseRounds');
   values = sheet.getDataRange().getValues(); // 치유 후 값 다시 읽기
   headers = values[0].map(h => String(h).trim());
   const dateCol = headers.indexOf('date');
   if (dateCol === -1) return;
-  const normDate = normalizeDateCell(date);
+  const normDate = normalizeFn(date);
   // 뒤에서부터 삭제해야 앞 행을 지워도 나머지 행 번호가 밀리지 않습니다.
   for (let i = values.length - 1; i >= 1; i--) {
-    if (normalizeDateCell(values[i][dateCol]) === normDate) {
+    if (normalizeFn(values[i][dateCol]) === normDate) {
       sheet.deleteRow(i + 1);
     }
   }
