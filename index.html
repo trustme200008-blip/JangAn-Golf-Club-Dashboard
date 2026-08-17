@@ -4325,7 +4325,11 @@
             thead.innerHTML = `<th class="p-2.5 sm:p-3 whitespace-nowrap">일자</th><th class="p-2.5 sm:p-3 whitespace-nowrap">코스명</th><th class="p-2.5 sm:p-3 whitespace-nowrap">플레이어</th>` +
                 COURSE_METRICS.map(m => `<th class="p-2.5 sm:p-3 text-right whitespace-nowrap">${m.label}</th>`).join('');
 
-            document.getElementById('crTableCount').innerText = CR_DATES.length;
+            // 총 횟수는 전체 라운드(날짜) 수가 아니라, 선택된 플레이어가 실제로 값을 기록한
+            // 회차만 셉니다. 0타(기록 없음)는 crGetPlayerYearAvg의 평균 계산과 동일하게 제외합니다.
+            const countMetricKey = (COURSE_METRICS[0] && COURSE_METRICS[0].key) || 'score';
+            const validRoundCount = (p[countMetricKey] || []).filter(v => v != null && !isNaN(v) && v !== 0).length;
+            document.getElementById('crTableCount').innerText = validRoundCount;
 
             // CR_DATES는 항상 오름차순(과거→최신)으로 정렬돼 있으므로, 최신 회차가 위로 오도록
             // 인덱스 순서만 뒤집어서 표시합니다 (데이터 배열 자체의 정렬은 그대로 둡니다).
