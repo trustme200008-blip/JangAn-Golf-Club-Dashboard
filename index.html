@@ -2192,6 +2192,9 @@
 
                 // 구글 시트 연동이 설정돼 있으면 함께 저장 (다른 플레이어에게도 보이도록)
                 await saveRoundToSheet(formattedDate, dataByPlayer);
+
+                // 저장된 결과를 카톡 등에 바로 공유할 수 있도록 클립보드에 복사
+                await shareRoundResult(buildScreenRoundShareText(formattedDate, dataByPlayer));
             });
 
             // Edit Round Modal Controls
@@ -3903,6 +3906,76 @@
             return String(str || '').replace(/[<>"'`]/g, '').trim();
         }
 
+        // ===== 라운드 추가 결과 문자 복사 (카카오톡 등 공유용) =====
+        // "라운드 추가" 저장이 끝나면 결과를 사람이 읽기 좋은 텍스트로 만들어 클립보드에 복사합니다.
+        // Clipboard API가 막혀 있는 환경(비-HTTPS 등)에서는 execCommand('copy') 방식으로 대체합니다.
+        async function copyTextToClipboard(text) {
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(text);
+                    return true;
+                }
+            } catch (err) {
+                console.warn('클립보드 복사 실패 (Clipboard API), 대체 방식으로 재시도합니다.', err);
+            }
+            try {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                const ok = document.execCommand('copy');
+                document.body.removeChild(ta);
+                return ok;
+            } catch (err) {
+                console.warn('클립보드 복사 실패 (execCommand)', err);
+                return false;
+            }
+        }
+
+        function buildScreenRoundShareText(formattedDate, dataByPlayer) {
+            const metrics = [
+                { key: 'gHandicap', label: 'G핸디', unit: '', decimals: 1 },
+                { key: 'fir', label: 'FIR', unit: '%', decimals: 1 },
+                { key: 'gir', label: 'GIR', unit: '%', decimals: 1 },
+                { key: 'putt', label: '퍼팅', unit: '개', decimals: 2 },
+                { key: 'distance', label: '비거리', unit: 'm', decimals: 1 }
+            ];
+            const lines = [`⛳ 2026-${formattedDate.replace('/', '-')} 스크린골프 라운드`];
+            PLAYERS.forEach(player => {
+                const rec = dataByPlayer[player];
+                if (!rec) return;
+                const parts = metrics
+                    .map(m => (rec[m.key] == null || isNaN(rec[m.key])) ? null : `${m.label} ${rec[m.key].toFixed(m.decimals)}${m.unit}`)
+                    .filter(Boolean);
+                if (parts.length) lines.push(`${player}: ${parts.join(' · ')}`);
+            });
+            return lines.join('\n');
+        }
+
+        function buildCourseRoundShareText(formattedDate, dataByPlayer, courseName) {
+            const lines = [`⛳ 2026-${formattedDate.replace('/', '-')} 코스라운드${courseName ? ' (' + courseName + ')' : ''}`];
+            PLAYERS.forEach(player => {
+                const rec = dataByPlayer[player];
+                if (!rec) return;
+                const parts = COURSE_METRICS
+                    .map(m => (rec[m.key] == null || isNaN(rec[m.key])) ? null : `${m.label} ${rec[m.key].toFixed(m.decimals)}${m.unit}`)
+                    .filter(Boolean);
+                if (parts.length) lines.push(`${player}: ${parts.join(' · ')}`);
+            });
+            return lines.join('\n');
+        }
+
+        async function shareRoundResult(text) {
+            const copied = await copyTextToClipboard(text);
+            showRoundNotification(
+                copied ? '결과가 복사되었습니다' : '결과 복사 실패',
+                copied ? '카카오톡 등에 붙여넣기(Ctrl+V)하면 됩니다.' : '브라우저에서 클립보드 접근이 차단되었습니다.'
+            );
+        }
+
         // 코스명 입력칸 커스텀 자동완성. 전국 골프장 이름뿐 아니라 GOLF_COURSE_ALIASES에 등록된
         // 한글 별칭으로도 검색되며(예: "오크힐스" → "Oak Hills컨트리클럽"), 목록에 없는 이름도 그대로 직접 입력할 수 있습니다.
         function crSetupCourseNameAutocomplete(inputId, suggestId) {
@@ -4067,6 +4140,9 @@
                 crRenderAll();
                 closeAddModal();
                 await saveCourseRoundToSheet(formattedDate, dataByPlayer, courseName);
+
+                // 저장된 결과를 카톡 등에 바로 공유할 수 있도록 클립보드에 복사
+                await shareRoundResult(buildCourseRoundShareText(formattedDate, dataByPlayer, courseName));
             });
 
             // 수정 모달
