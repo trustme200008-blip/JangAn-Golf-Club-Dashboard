@@ -4530,7 +4530,7 @@
                     plugins: { legend: { display: false } },
                     scales: {
                         x: { ticks: { color: colors.tick }, grid: { display: false } },
-                        y: { ticks: { color: colors.tick }, grid: { color: colors.grid } }
+                        y: { min: 70, ticks: { color: colors.tick }, grid: { color: colors.grid } }
                     }
                 }
             });
@@ -4575,7 +4575,7 @@
                     plugins: { legend: { display: false } },
                     scales: {
                         x: { ticks: { color: colors.tick, maxRotation: 60, minRotation: 45 }, grid: { display: false } },
-                        y: { ticks: { color: colors.tick }, grid: { color: colors.grid } }
+                        y: { min: 70, ticks: { color: colors.tick }, grid: { color: colors.grid } }
                     }
                 }
             });
@@ -4638,7 +4638,7 @@
                     },
                     scales: {
                         x: { ticks: { color: theme.tick, maxRotation: 60, minRotation: 45, font: { size: 10 } }, grid: { display: false } },
-                        y: { ticks: { color: theme.tick }, grid: { color: theme.grid } }
+                        y: { min: 70, ticks: { color: theme.tick }, grid: { color: theme.grid } }
                     }
                 }
             });
