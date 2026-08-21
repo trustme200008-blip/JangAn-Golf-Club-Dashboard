@@ -1129,10 +1129,6 @@
                     </div>
                 </div>
 
-                <div id="crMetricCards" class="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-                    <!-- JS Populated from COURSE_METRICS -->
-                </div>
-
                 <div class="glass-panel p-4 sm:p-6 rounded-2xl shadow-xl">
                     <div class="flex flex-row justify-between items-center gap-2 mb-4">
                         <div>
@@ -4590,20 +4586,20 @@
             document.getElementById('crPlayerAvatar').textContent = selectedPlayer;
             document.getElementById('crSingleTitle').innerHTML = `${selectedPlayer} 플레이어 <span class="text-slate-400 text-xs sm:text-sm font-normal whitespace-nowrap">(${dateStr}${courseName ? ' · ' + courseName : ''})</span>`;
 
+            // 선택 라운드의 총타수(원래 crMetricCards 카드에 있던 값). 누적 평균은 아래
+            // "평균 스코어" 요약 카드에서 보여주므로, 이 자리는 선택 라운드 값 전용으로 씁니다.
             const primary = COURSE_METRICS[0];
             const avgLabelEl = document.getElementById('crPlayerAvgLabel');
             if (primary) {
-                if (avgLabelEl) avgLabelEl.textContent = `누적 평균 ${primary.label}`;
-                // 0(미기록/불참)은 제외하고 평균을 냅니다 — 게임 탭/순위 탭과 동일한 규칙(crGetPlayerYearAvg).
-                const avg = crGetPlayerYearAvg(selectedPlayer, primary.key);
-                document.getElementById('crPlayerAvgHandicap').textContent = avg != null ? avg.toFixed(primary.decimals) + (primary.unit || '') : '-';
+                if (avgLabelEl) avgLabelEl.textContent = primary.label;
+                const val = (p && idx >= 0 && p[primary.key][idx] != null) ? p[primary.key][idx] : null;
+                document.getElementById('crPlayerAvgHandicap').textContent = val != null ? val.toFixed(primary.decimals) + (primary.unit || '') : '-';
             } else {
-                if (avgLabelEl) avgLabelEl.textContent = '누적 평균';
+                if (avgLabelEl) avgLabelEl.textContent = '총타수';
                 document.getElementById('crPlayerAvgHandicap').textContent = '-';
             }
 
             crRenderSummaryCards();
-            crRenderMetricCards();
             crRenderFullTable();
         }
 
@@ -4640,29 +4636,6 @@
             } else {
                 handicapEl.textContent = '-';
             }
-        }
-
-        function crRenderMetricCards() {
-            const container = document.getElementById('crMetricCards');
-            if (!container) return;
-            const idx = crSelectedDateIndex;
-            const p = CR_DATA[selectedPlayer];
-            container.innerHTML = COURSE_METRICS.map(m => {
-                const val = (p && idx >= 0 && p[m.key][idx] != null) ? p[m.key][idx] : null;
-                const displayVal = val != null ? val.toFixed(m.decimals) : '-';
-                return `
-                <div class="col-span-2 sm:col-span-1 glass-panel p-4 sm:p-5 rounded-2xl relative overflow-hidden border-l-4 border-l-${m.color}-500">
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="text-xs font-medium text-slate-400">${m.label}</span>
-                        <svg class="inline-block align-[-0.15em] shrink-0 text-${m.color}-400/60 text-base sm:text-lg" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${m.icon}</svg>
-                    </div>
-                    <div class="flex items-baseline gap-2">
-                        <span class="text-2xl sm:text-3xl font-extrabold text-white">${displayVal}</span>
-                        ${m.unit ? `<span class="text-xs sm:text-sm font-bold text-slate-400">${m.unit}</span>` : ''}
-                    </div>
-                    <p class="text-[10px] sm:text-[11px] text-slate-400 mt-2.5">${m.desc}</p>
-                </div>`;
-            }).join('');
         }
 
         function crRenderFullTable() {
