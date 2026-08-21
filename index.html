@@ -1083,6 +1083,52 @@
                     </div>
                 </div>
 
+                <div id="crSummaryCards" class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                    <div class="glass-panel p-4 sm:p-5 rounded-2xl relative overflow-hidden border-l-4 border-l-blue-500">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-xs font-medium text-slate-400">핸디캡</span>
+                            <svg class="inline-block align-[-0.15em] shrink-0 text-blue-400/60 text-base sm:text-lg" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <span id="crStatHandicap" class="text-2xl sm:text-3xl font-extrabold text-white">-</span>
+                        </div>
+                        <p class="text-[10px] sm:text-[11px] text-slate-400 mt-2.5">평균 스코어 - 파72 기준 추정치</p>
+                    </div>
+                    <div class="glass-panel p-4 sm:p-5 rounded-2xl relative overflow-hidden border-l-4 border-l-amber-500">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-xs font-medium text-slate-400">베스트 스코어</span>
+                            <svg class="inline-block align-[-0.15em] shrink-0 text-amber-400/60 text-base sm:text-lg" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <span id="crStatBest" class="text-2xl sm:text-3xl font-extrabold text-white">-</span>
+                            <span class="text-xs sm:text-sm font-bold text-slate-400">타</span>
+                        </div>
+                        <p class="text-[10px] sm:text-[11px] text-slate-400 mt-2.5">선택 연도 최저 타수</p>
+                    </div>
+                    <div class="glass-panel p-4 sm:p-5 rounded-2xl relative overflow-hidden border-l-4 border-l-emerald-500">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-xs font-medium text-slate-400">평균 스코어</span>
+                            <svg class="inline-block align-[-0.15em] shrink-0 text-emerald-400/60 text-base sm:text-lg" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <span id="crStatAvg" class="text-2xl sm:text-3xl font-extrabold text-white">-</span>
+                            <span class="text-xs sm:text-sm font-bold text-slate-400">타</span>
+                        </div>
+                        <p class="text-[10px] sm:text-[11px] text-slate-400 mt-2.5">0/미기록 제외, 선택 연도 기준</p>
+                    </div>
+                    <div class="glass-panel p-4 sm:p-5 rounded-2xl relative overflow-hidden border-l-4 border-l-purple-500">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-xs font-medium text-slate-400">총 라운드</span>
+                            <svg class="inline-block align-[-0.15em] shrink-0 text-purple-400/60 text-base sm:text-lg" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <span id="crStatTotalRounds" class="text-2xl sm:text-3xl font-extrabold text-white">-</span>
+                            <span class="text-xs sm:text-sm font-bold text-slate-400">회</span>
+                        </div>
+                        <p class="text-[10px] sm:text-[11px] text-slate-400 mt-2.5">실제 기록이 있는 회차만 집계 (선택 연도)</p>
+                    </div>
+                </div>
+
                 <div id="crMetricCards" class="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
                     <!-- JS Populated from COURSE_METRICS -->
                 </div>
@@ -4556,8 +4602,44 @@
                 document.getElementById('crPlayerAvgHandicap').textContent = '-';
             }
 
+            crRenderSummaryCards();
             crRenderMetricCards();
             crRenderFullTable();
+        }
+
+        // 개별 탭 상단 요약 4종: 핸디캡(간이 추정) / 베스트 스코어 / 평균 스코어 / 총 라운드.
+        // 전부 선택 연도 기준이며, 0(미기록) 회차는 제외합니다.
+        function crRenderSummaryCards() {
+            const handicapEl = document.getElementById('crStatHandicap');
+            const bestEl = document.getElementById('crStatBest');
+            const avgEl = document.getElementById('crStatAvg');
+            const totalEl = document.getElementById('crStatTotalRounds');
+            if (!handicapEl || !bestEl || !avgEl || !totalEl) return;
+
+            ensureCRPlayerData(selectedPlayer);
+            const scoreMetric = COURSE_METRICS.find(m => m.key === 'score') || COURSE_METRICS[0];
+            const validScores = (CR_DATA[selectedPlayer][scoreMetric.key] || []).filter(v => v != null && !isNaN(v) && v !== 0);
+
+            totalEl.textContent = validScores.length;
+
+            const best = validScores.length ? Math.min(...validScores) : null;
+            bestEl.textContent = best != null ? best.toFixed(scoreMetric.decimals) : '-';
+
+            const rawAvg = crGetPlayerYearAvg(selectedPlayer, scoreMetric.key);
+            // 화면에 표시되는 평균은 반올림된 값이므로, 핸디캡도 반올림 전 원본이 아니라 이
+            // "표시되는" 값 기준으로 계산해야 평균 스코어 숫자와 핸디캡 숫자가 서로 어긋나 보이지
+            // 않습니다 (예: 평균이 94로 보이는데 핸디캡은 94.14 기준 +22.1로 나오는 문제 방지).
+            const avg = rawAvg != null ? Number(rawAvg.toFixed(scoreMetric.decimals)) : null;
+            avgEl.textContent = avg != null ? avg.toFixed(scoreMetric.decimals) : '-';
+
+            // 핸디캡(간이 추정): 평균 스코어 - 파72. 실제 코스마다 파가 달라 정확한 핸디캡은
+            // 아니지만, 별도 입력 없이 이미 있는 평균 스코어로 바로 보여줄 수 있는 근사치입니다.
+            if (avg != null) {
+                const diff = avg - 72;
+                handicapEl.textContent = (diff >= 0 ? '+' : '') + diff.toFixed(scoreMetric.decimals);
+            } else {
+                handicapEl.textContent = '-';
+            }
         }
 
         function crRenderMetricCards() {
