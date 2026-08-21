@@ -4604,7 +4604,8 @@
         }
 
         // 개별 탭 상단 요약 4종: 핸디캡(간이 추정) / 베스트 스코어 / 평균 스코어 / 총 라운드.
-        // 전부 선택 연도 기준이며, 0(미기록) 회차는 제외합니다.
+        // 선택 연도의, "선택한 라운드까지"(그 이후 회차는 제외) 기록 기준입니다 — 과거 회차를
+        // 선택하면 그 시점까지의 누적 스탯을 보여줍니다. 0(미기록) 회차는 항상 제외합니다.
         function crRenderSummaryCards() {
             const handicapEl = document.getElementById('crStatHandicap');
             const bestEl = document.getElementById('crStatBest');
@@ -4614,14 +4615,16 @@
 
             ensureCRPlayerData(selectedPlayer);
             const scoreMetric = COURSE_METRICS.find(m => m.key === 'score') || COURSE_METRICS[0];
-            const validScores = (CR_DATA[selectedPlayer][scoreMetric.key] || []).filter(v => v != null && !isNaN(v) && v !== 0);
+            const idx = crSelectedDateIndex;
+            const scoresUpToSelected = (CR_DATA[selectedPlayer][scoreMetric.key] || []).slice(0, idx + 1);
+            const validScores = scoresUpToSelected.filter(v => v != null && !isNaN(v) && v !== 0);
 
             totalEl.textContent = validScores.length;
 
             const best = validScores.length ? Math.min(...validScores) : null;
             bestEl.textContent = best != null ? best.toFixed(scoreMetric.decimals) : '-';
 
-            const rawAvg = crGetPlayerYearAvg(selectedPlayer, scoreMetric.key);
+            const rawAvg = validScores.length ? validScores.reduce((a, v) => a + v, 0) / validScores.length : null;
             // 화면에 표시되는 평균은 반올림된 값이므로, 핸디캡도 반올림 전 원본이 아니라 이
             // "표시되는" 값 기준으로 계산해야 평균 스코어 숫자와 핸디캡 숫자가 서로 어긋나 보이지
             // 않습니다 (예: 평균이 94로 보이는데 핸디캡은 94.14 기준 +22.1로 나오는 문제 방지).
