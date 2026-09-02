@@ -2098,6 +2098,9 @@
         // 비워두면(기본값) 기존처럼 이 브라우저 세션 안에서만 데이터가 유지됩니다.
         const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxURH1h6-8eLLowYfIO0jyg2Nk-jf3XChcoODrE348DprcVy19Yr48Ab4wmc_w_U-w8/exec';
 
+        // 라운드 추가 시 카톡 등에 공유되는 문자 맨 끝에 붙이는 대시보드 링크
+        const DASHBOARD_URL = 'https://trustme200008-blip.github.io/JangAn-Golf-Club-Dashboard/';
+
         function hasSheetBackend() {
             return typeof SHEET_API_URL === 'string' && SHEET_API_URL.trim().length > 0;
         }
@@ -4226,37 +4229,39 @@
             }
         }
 
+        // 카톡 공유용 문자는 너무 길어지지 않도록 핵심 지표 하나만, 전원을 한 줄로 보여줍니다.
+        // (스크린골프는 원래 5개 지표×5명이 전부 나와 문자가 너무 길었습니다. 나머지 지표는
+        // 앱에서 확인할 수 있습니다.)
         function buildScreenRoundShareText(formattedDate, dataByPlayer) {
-            const metrics = [
-                { key: 'gHandicap', label: 'G핸디', unit: '', decimals: 1 },
-                { key: 'fir', label: 'FIR', unit: '%', decimals: 1 },
-                { key: 'gir', label: 'GIR', unit: '%', decimals: 1 },
-                { key: 'putt', label: '퍼팅', unit: '개', decimals: 2 },
-                { key: 'distance', label: '비거리', unit: 'm', decimals: 1 }
-            ];
-            const lines = ['라운드가 추가되었습니다.', `⛳ 2026-${formattedDate.replace('/', '-')} 스크린골프 라운드`];
-            PLAYERS.forEach(player => {
-                const rec = dataByPlayer[player];
-                if (!rec) return;
-                const parts = metrics
-                    .map(m => (rec[m.key] == null || isNaN(rec[m.key])) ? null : `${m.label} ${rec[m.key].toFixed(m.decimals)}${m.unit}`)
-                    .filter(Boolean);
-                if (parts.length) lines.push(`${player}: ${parts.join(' · ')}`);
-            });
-            return lines.join('\n');
+            const metric = { key: 'gHandicap', label: 'G핸디', unit: '', decimals: 1 };
+            const parts = PLAYERS
+                .map(player => {
+                    const v = dataByPlayer[player] && dataByPlayer[player][metric.key];
+                    return (v == null || isNaN(v)) ? null : `${player} ${v.toFixed(metric.decimals)}${metric.unit}`;
+                })
+                .filter(Boolean);
+            return [
+                '라운드가 추가되었습니다.',
+                `⛳ 2026-${formattedDate.replace('/', '-')} 스크린골프 (${metric.label})`,
+                parts.join(' · '),
+                DASHBOARD_URL
+            ].join('\n');
         }
 
         function buildCourseRoundShareText(formattedDate, dataByPlayer, courseName) {
-            const lines = ['라운드가 추가되었습니다.', `⛳ ${formattedDate} 코스라운드${courseName ? ' (' + courseName + ')' : ''}`];
-            PLAYERS.forEach(player => {
-                const rec = dataByPlayer[player];
-                if (!rec) return;
-                const parts = COURSE_METRICS
-                    .map(m => (rec[m.key] == null || isNaN(rec[m.key])) ? null : `${m.label} ${rec[m.key].toFixed(m.decimals)}${m.unit}`)
-                    .filter(Boolean);
-                if (parts.length) lines.push(`${player}: ${parts.join(' · ')}`);
-            });
-            return lines.join('\n');
+            const metric = COURSE_METRICS[0];
+            const parts = PLAYERS
+                .map(player => {
+                    const v = dataByPlayer[player] && dataByPlayer[player][metric.key];
+                    return (v == null || isNaN(v)) ? null : `${player} ${v.toFixed(metric.decimals)}${metric.unit || ''}`;
+                })
+                .filter(Boolean);
+            return [
+                '라운드가 추가되었습니다.',
+                `⛳ ${formattedDate} 코스라운드${courseName ? ' (' + courseName + ')' : ''} (${metric.label})`,
+                parts.join(' · '),
+                DASHBOARD_URL
+            ].join('\n');
         }
 
         // 코스명 입력칸 커스텀 자동완성. 전국 골프장 이름뿐 아니라 GOLF_COURSE_ALIASES에 등록된
