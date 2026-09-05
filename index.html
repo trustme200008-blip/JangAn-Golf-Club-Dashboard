@@ -1261,7 +1261,7 @@
                             <svg class="inline-block align-[-0.15em] shrink-0 text-emerald-400" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                             <span id="crGameSelectedPlayerLabel">민</span> 기준 상대별 타수 차이
                         </h4>
-                        <p class="text-[11px] sm:text-xs text-slate-400 mb-3">상단 "플레이어 선택"에서 고른 플레이어와 나머지 동호회원의 최근 5회차 총타수 평균 차이(반올림)입니다.</p>
+                        <p class="text-[11px] sm:text-xs text-slate-400 mb-3">상단 "플레이어 선택"에서 고른 플레이어와 나머지 동호회원의 최근 5회차(선택 라운드 포함 직전 5회) 총타수 평균 차이(반올림)입니다.</p>
                         <div id="crGameVsListContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             <!-- JS Populated -->
                         </div>
@@ -4850,17 +4850,30 @@
             });
         }
 
-        // ===== 코스라운드 스크래치 게임 / 순위 탭 "최근 5회 평균" 공용 =====
-        // 특정 회차 값이 없거나(null) 0이면 "기록 없음"으로 보고 건너뛰고, 그 이전 회차 값을
-        // 대신 가져와서 유효한 값 5개(가능한 만큼)를 채웁니다. 연도 선택과 무관하게 전체
-        // 데이터(CR_DATA_ALL)에서 "직전 5회차"를 가져옵니다 — 예를 들어 2026년 기록이 3개뿐이면,
-        // 부족한 2개는 2025년 등 이전 연도의 최근 기록으로 채웁니다. 게임 탭(crGetGameStandings)과
-        // 순위 탭의 "최근 5회 평균" 열이 이 함수를 공용으로 씁니다.
+        // 현재 선택된 라운드 일자(CR_DATES[crSelectedDateIndex])가 전체 데이터(CR_DATES_ALL)에서
+        // 몇 번째 회차인지 돌려줍니다. 화면용 뷰(CR_DATES)는 연도로 걸러진 배열이라 인덱스가
+        // 전체 데이터와 다르기 때문에, "최근 5회차" 계산의 기준점을 잡을 때는 이렇게 전체 기준
+        // 인덱스로 변환해야 합니다. 선택된 라운드가 없으면 전체 마지막 회차를 기준으로 씁니다.
+        function crGetSelectedAllIndex() {
+            const dateStr = CR_DATES[crSelectedDateIndex];
+            const allIdx = dateStr ? CR_DATES_ALL.indexOf(dateStr) : -1;
+            return allIdx >= 0 ? allIdx : CR_DATES_ALL.length - 1;
+        }
+
+        // ===== 코스라운드 "최근 5회 평균" 공용 =====
+        // 기준은 "선택된 라운드 일자를 포함한 직전 5회차"입니다. 즉 과거 라운드를 선택하면
+        // 그 시점까지의 최근 5회차로 평균이 다시 계산되고, 그 이후 회차는 보지 않습니다.
+        // 연도 선택과는 무관하게 전체 데이터(CR_DATA_ALL)에서 거슬러 올라가므로, 예를 들어
+        // 2026년 첫 라운드를 선택하면 나머지 4회차는 2025년 등 이전 연도 기록으로 채워집니다.
+        // 값이 없거나(null) 0인 회차는 "기록 없음"으로 보고 건너뛰고 그 이전 회차 값을 대신
+        // 가져오며, 그래도 5개가 안 되면 있는 값만으로 평균을 냅니다.
+        // 게임 탭(crGetGameStandings)과 순위 탭의 "최근 5회 평균" 열이 이 함수를 공용으로 씁니다.
         function crGetPlayerRecentValidValues(player, metricKey, count) {
             ensureCRPlayerDataAll(player);
             const arr = CR_DATA_ALL[player][metricKey] || [];
             const picked = [];
-            for (let idx = arr.length - 1; idx >= 0 && picked.length < count; idx--) {
+            const startIdx = Math.min(crGetSelectedAllIndex(), arr.length - 1);
+            for (let idx = startIdx; idx >= 0 && picked.length < count; idx--) {
                 const v = arr[idx];
                 if (v != null && !isNaN(v) && v !== 0) {
                     picked.push({ idx, val: v });
@@ -4906,7 +4919,7 @@
             const metric = COURSE_METRICS.find(m => m.key === 'score');
             const rangeLabelEl = document.getElementById('crGameRangeLabel');
             if (rangeLabelEl) {
-                rangeLabelEl.textContent = '최근 5회차 (0타·미기록 회차는 건너뛰고 이전 회차 값으로 대체)';
+                rangeLabelEl.textContent = '선택 라운드 포함 직전 5회차 (연도 무관, 0타·미기록 회차는 건너뛰고 이전 회차 값으로 대체)';
             }
 
             const listContainer = document.getElementById('crGameListContainer');
@@ -5070,7 +5083,7 @@
 
             const rankDescEl = document.getElementById('crRankDescText');
             if (rankDescEl) {
-                rankDescEl.innerHTML = `<span class="text-slate-300 font-semibold">${crSelectedYear}년 평균</span> 기준 동호회원 순위입니다. 지표별로 <span class="text-slate-300 font-semibold">선택 라운드 · 최근 5회차 평균 · ${crSelectedYear}년 평균</span> 세 가지를 함께 보여줍니다.`;
+                rankDescEl.innerHTML = `<span class="text-slate-300 font-semibold">${crSelectedYear}년 평균</span> 기준 동호회원 순위입니다. 지표별로 <span class="text-slate-300 font-semibold">선택 라운드 · 최근 5회차 평균 · ${crSelectedYear}년 평균</span> 세 가지를 함께 보여줍니다. "최근 5회차 평균"은 연도와 무관하게 <span class="text-slate-300 font-semibold">선택한 라운드를 포함한 직전 5회차</span> 기준입니다.`;
             }
 
             // 지표별로 "선택 라운드 값 / 최근 5회차 평균 / 선택 연도 평균" 3열을 함께 보여줍니다.
