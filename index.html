@@ -4850,27 +4850,13 @@
             });
         }
 
-        // ===== 코스라운드 스크래치 게임 (최근 5회차 총타수 평균 기준) =====
+        // ===== 코스라운드 스크래치 게임 / 순위 탭 "최근 5회 평균" 공용 =====
         // 특정 회차 값이 없거나(null) 0이면 "기록 없음"으로 보고 건너뛰고, 그 이전 회차 값을
-        // 대신 가져와서 유효한 값 5개(가능한 만큼)를 채웁니다.
+        // 대신 가져와서 유효한 값 5개(가능한 만큼)를 채웁니다. 연도 선택과 무관하게 전체
+        // 데이터(CR_DATA_ALL)에서 "직전 5회차"를 가져옵니다 — 예를 들어 2026년 기록이 3개뿐이면,
+        // 부족한 2개는 2025년 등 이전 연도의 최근 기록으로 채웁니다. 게임 탭(crGetGameStandings)과
+        // 순위 탭의 "최근 5회 평균" 열이 이 함수를 공용으로 씁니다.
         function crGetPlayerRecentValidValues(player, metricKey, count) {
-            ensureCRPlayerData(player);
-            const arr = CR_DATA[player][metricKey] || [];
-            const picked = [];
-            for (let idx = arr.length - 1; idx >= 0 && picked.length < count; idx--) {
-                const v = arr[idx];
-                if (v != null && !isNaN(v) && v !== 0) {
-                    picked.push({ idx, val: v });
-                }
-            }
-            return picked; // 최신 회차 순으로, 최대 count개
-        }
-
-        // 스크래치 게임 전용: 연도 선택과 무관하게 전체 데이터(CR_DATA_ALL)에서 "직전 5회차"를
-        // 가져옵니다. 예를 들어 2026년 기록이 3개뿐이면, 부족한 2개는 2025년 등 이전 연도의
-        // 최근 기록으로 채웁니다. (순위 탭의 "최근 5회 평균"은 선택 연도 기준을 유지하기 위해
-        // 위의 crGetPlayerRecentValidValues를 그대로 씁니다 — 이 함수는 게임 탭 전용입니다.)
-        function crGetPlayerRecentValidValuesAllYears(player, metricKey, count) {
             ensureCRPlayerDataAll(player);
             const arr = CR_DATA_ALL[player][metricKey] || [];
             const picked = [];
@@ -4880,7 +4866,7 @@
                     picked.push({ idx, val: v });
                 }
             }
-            return picked;
+            return picked; // 최신 회차 순으로, 최대 count개
         }
 
         // 특정 선수의 해당 지표 "선택된 연도(crSelectedYear) 평균"을 계산합니다. 0/미기록 회차는
@@ -4900,7 +4886,7 @@
             if (CR_DATES_ALL.length === 0) return [];
             const standings = [];
             PLAYERS.forEach((player, i) => {
-                const picked = crGetPlayerRecentValidValuesAllYears(player, metric.key, 5);
+                const picked = crGetPlayerRecentValidValues(player, metric.key, 5);
                 if (!picked.length) return; // 유효한 기록이 하나도 없는 선수는 게임 순위에서 제외
                 // 화면에 표시되는 평균은 반올림된 정수이므로, 순위 차이(diff)도 반올림 전
                 // 원본 평균이 아니라 이 "표시되는" 반올림값 기준으로 계산해야 화면상 숫자와
