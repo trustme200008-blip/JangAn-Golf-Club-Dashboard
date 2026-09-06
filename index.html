@@ -727,7 +727,7 @@
             </div>
         </div>
 
-        <!-- VIEW 4: SCRATCH GAME (최근 회차 G핸디 기준 핸디차이) -->
+        <!-- VIEW 4: SCRATCH GAME (선택한 라운드 일자의 G핸디 기준 핸디차이) -->
         <div id="viewScratch" class="hidden space-y-6">
             <div class="glass-panel p-4 sm:p-6 rounded-2xl">
                 <div class="mb-4 sm:mb-6">
@@ -735,7 +735,7 @@
                         <svg class="inline-block align-[-0.15em] shrink-0 text-emerald-400" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg> 스크래치 게임
                     </h3>
                     <p class="text-[11px] sm:text-xs text-slate-400 mt-0.5">
-                        <span id="scratchDateLabel">2026-07-27</span> (최근 회차) G핸디 기준, 가장 낮은 핸디 플레이어가 스크래치(0타)이고 나머지는 그 차이만큼(반올림) 타수를 받습니다.
+                        <span id="scratchDateLabel">2026-07-27</span> (선택 회차) G핸디 기준, 가장 낮은 핸디 플레이어가 스크래치(0타)이고 나머지는 그 차이만큼(반올림) 타수를 받습니다. 상단 "라운드 일자"를 바꾸면 그 회차 기준으로 다시 계산됩니다.
                     </p>
                 </div>
 
@@ -750,7 +750,7 @@
                         <svg class="inline-block align-[-0.15em] shrink-0 text-emerald-400" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                         <span id="scratchSelectedPlayerLabel">민</span> 기준 상대별 핸디 차이
                     </h4>
-                    <p class="text-[11px] sm:text-xs text-slate-400 mb-3">상단 "플레이어 선택"에서 고른 플레이어와 나머지 4명의 최근 회차 G핸디 차이(반올림)입니다.</p>
+                    <p class="text-[11px] sm:text-xs text-slate-400 mb-3">상단 "플레이어 선택"에서 고른 플레이어와 나머지 4명의 선택 회차 G핸디 차이(반올림)입니다.</p>
                     <div id="scratchVsListContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         <!-- JS Populated -->
                     </div>
@@ -3478,10 +3478,18 @@
             });
         }
 
-        // ===== 스크래치 게임 (최근 회차 G핸디 기준 핸디차이) =====
+        // ===== 스크래치 게임 (선택한 라운드 일자의 G핸디 기준 핸디차이) =====
+        // 기준 회차는 상단 "라운드 일자"에서 고른 회차입니다 — 과거 회차를 선택하면 그 날의
+        // G핸디로 스크래치/받는 타수가 다시 계산됩니다. (예전에는 항상 최신 회차 고정이었습니다.)
+        function scratchBaseIdx() {
+            if (DATES.length === 0) return -1;
+            const idx = selectedDateIndex;
+            return (idx >= 0 && idx < DATES.length) ? idx : DATES.length - 1;
+        }
+
         function getScratchStandings() {
             if (DATES.length === 0) return [];
-            const latestIdx = DATES.length - 1;
+            const latestIdx = scratchBaseIdx();
             const standings = PLAYERS.map((player, i) => ({
                 player,
                 color: playerLineColor(player, i),
@@ -3498,7 +3506,7 @@
 
         function renderScratchView() {
             if (DATES.length === 0) return;
-            const latestIdx = DATES.length - 1;
+            const latestIdx = scratchBaseIdx();
 
             const dateLabel = document.getElementById('scratchDateLabel');
             if (dateLabel) dateLabel.textContent = `2026-${DATES[latestIdx].replace('/', '-')}`;
@@ -4937,7 +4945,7 @@
 
             if (listContainer) {
                 if (!standings.length) {
-                    listContainer.innerHTML = `<p class="text-xs text-slate-400">최근 회차에 총타수가 기록된 동호회원이 없습니다.</p>`;
+                    listContainer.innerHTML = `<p class="text-xs text-slate-400">선택 라운드까지 총타수가 기록된 동호회원이 없습니다.</p>`;
                 } else {
                     listContainer.innerHTML = standings.map((s, i) => {
                         const isScratch = s.diff === 0;
@@ -4974,7 +4982,7 @@
             if (vsContainer) {
                 const selfEntry = standings.find(s => s.player === selectedPlayer);
                 if (!selfEntry) {
-                    vsContainer.innerHTML = `<p class="text-xs text-slate-400">${selectedPlayer} 선수의 최근 회차 총타수 기록이 없어 비교할 수 없습니다.</p>`;
+                    vsContainer.innerHTML = `<p class="text-xs text-slate-400">${selectedPlayer} 선수의 선택 라운드까지 총타수 기록이 없어 비교할 수 없습니다.</p>`;
                 } else {
                     const others = standings.filter(s => s.player !== selectedPlayer);
                     vsContainer.innerHTML = others.map(o => {
