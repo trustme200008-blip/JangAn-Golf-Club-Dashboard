@@ -5108,7 +5108,7 @@
 
             const rankDescEl = document.getElementById('crRankDescText');
             if (rankDescEl) {
-                rankDescEl.innerHTML = `<span class="text-slate-300 font-semibold">${crSelectedYear}년 평균</span> 기준 동호회원 순위입니다. 지표별로 <span class="text-slate-300 font-semibold">선택 라운드 · 최근 5회차 평균 · ${crSelectedYear}년 평균</span> 세 가지를 함께 보여줍니다. "최근 5회차 평균"은 연도와 무관하게 <span class="text-slate-300 font-semibold">선택한 라운드를 포함한 직전 5회차</span> 기준입니다.`;
+                rankDescEl.innerHTML = `<span class="text-slate-300 font-semibold">${crSelectedYear}년 평균</span> 기준 동호회원 순위입니다. 지표별로 <span class="text-slate-300 font-semibold">선택 라운드 · 최근 5회차 평균 · ${crSelectedYear}년 평균</span> 세 가지를 함께 보여줍니다. "최근 5회차 평균"은 연도와 무관하게 <span class="text-slate-300 font-semibold">선택한 라운드를 포함한 직전 5회차</span> 기준입니다. 두 평균 열의 <span class="text-slate-300 font-semibold">괄호 안 숫자는 반올림 전 값</span>입니다(예: 94 (93.8)).`;
             }
 
             // 지표별로 "선택 라운드 값 / 최근 5회차 평균 / 선택 연도 평균" 3열을 함께 보여줍니다.
@@ -5124,6 +5124,18 @@
 
             const tbody = document.getElementById('crRankTableBody');
             const fmt = (m, v) => v != null && !isNaN(v) && v !== 0 ? v.toFixed(m.decimals) : '-';
+            // 평균 열(최근 5회 / 연도)은 지표의 소수점 자리수에 맞춰 반올림해서 보여주는데,
+            // 총타수는 decimals가 0이라 93.8이 그냥 "94"로 보입니다. 게임 탭이 "93.8 → 반올림 94타"로
+            // 근거를 적는 것과 맞추기 위해, 여기서도 반올림 전 값을 괄호로 함께 표시합니다.
+            // 반올림해도 값이 그대로면(94 → 94.0) 괄호를 생략해 표가 지저분해지지 않게 합니다.
+            // "선택 라운드" 열은 기록된 값 하나라서 반올림이 일어나지 않으므로 fmt를 그대로 씁니다.
+            const fmtAvg = (m, v) => {
+                if (v == null || isNaN(v) || v === 0) return '-';
+                const shown = v.toFixed(m.decimals);
+                const raw = v.toFixed(m.decimals + 1);
+                if (Number(raw) === Number(shown)) return shown;
+                return `${shown} <span class="text-[10px] text-slate-500">(${raw})</span>`;
+            };
             const hasAnyData = rows.some(r => COURSE_METRICS.some(m =>
                 CR_DATA[r.player][m.key][idx] || crGetPlayerRecentValidValues(r.player, m.key, 5).length || crGetPlayerYearAvg(r.player, m.key) != null
             ));
@@ -5146,8 +5158,8 @@
                         const recentAvg = recentPicked.length ? recentPicked.reduce((a, p) => a + p.val, 0) / recentPicked.length : null;
                         const yearAvg = m.key === primary.key ? r.val : crGetPlayerYearAvg(r.player, m.key);
                         return `<td class="p-3 text-center border-l border-slate-800 font-bold whitespace-nowrap">${fmt(m, selectedVal)}</td>
-                                <td class="p-3 text-center text-slate-300 whitespace-nowrap">${fmt(m, recentAvg)}</td>
-                                <td class="p-3 text-center text-slate-400 whitespace-nowrap">${fmt(m, yearAvg)}</td>`;
+                                <td class="p-3 text-center text-slate-300 whitespace-nowrap">${fmtAvg(m, recentAvg)}</td>
+                                <td class="p-3 text-center text-slate-400 whitespace-nowrap">${fmtAvg(m, yearAvg)}</td>`;
                     }).join('')}
                 </tr>`;
             }).join('');
