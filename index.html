@@ -735,7 +735,7 @@
                         <svg class="inline-block align-[-0.15em] shrink-0 text-emerald-400" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg> 스크래치 게임
                     </h3>
                     <p class="text-[11px] sm:text-xs text-slate-400 mt-0.5">
-                        <span id="scratchDateLabel">2026-07-27</span> (선택 회차) G핸디 기준, 가장 낮은 핸디 플레이어가 스크래치(0타)이고 나머지는 그 차이만큼(반올림) 타수를 받습니다. 상단 "라운드 일자"를 바꾸면 그 회차 기준으로 다시 계산됩니다.
+                        <span id="scratchDateLabel">2026-07-27</span> (선택 회차) G핸디 기준입니다. 각자의 G핸디를 <span class="text-slate-300 font-semibold">먼저 정수로 반올림</span>한 뒤(예: 4.1·4.2 → 4, 6.2 → 6, 6.8 → 7) 그 정수끼리 비교해, 가장 낮은 플레이어가 스크래치(0타)이고 나머지는 그 차이만큼 타수를 받습니다. 상단 "라운드 일자"를 바꾸면 그 회차 기준으로 다시 계산됩니다.
                     </p>
                 </div>
 
@@ -750,7 +750,7 @@
                         <svg class="inline-block align-[-0.15em] shrink-0 text-emerald-400" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                         <span id="scratchSelectedPlayerLabel">민</span> 기준 상대별 핸디 차이
                     </h4>
-                    <p class="text-[11px] sm:text-xs text-slate-400 mb-3">상단 "플레이어 선택"에서 고른 플레이어와 나머지 4명의 선택 회차 G핸디 차이(반올림)입니다.</p>
+                    <p class="text-[11px] sm:text-xs text-slate-400 mb-3">상단 "플레이어 선택"에서 고른 플레이어와 나머지 4명의 선택 회차 G핸디 차이입니다. 순위표와 같이 <span class="text-slate-300 font-semibold">각자 G핸디를 정수로 반올림한 뒤</span> 뺀 값이라, 두 표의 타수가 항상 맞아떨어집니다.</p>
                     <div id="scratchVsListContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         <!-- JS Populated -->
                     </div>
@@ -3487,19 +3487,33 @@
             return (idx >= 0 && idx < DATES.length) ? idx : DATES.length - 1;
         }
 
+        // G핸디를 타수로 바꿀 때 쓰는 반올림입니다. Math.round는 음수의 .5를 0 방향으로 올려서
+        // (-2.5 → -2) 양수와 규칙이 어긋나므로, 절대값을 반올림한 뒤 부호를 붙여 항상
+        // "0에서 먼 방향"으로 맞춥니다. G핸디가 음수인 플레이어가 있어도 규칙이 같습니다.
+        function scratchRound(v) {
+            if (v == null || isNaN(v)) return 0;
+            return Math.sign(v) * Math.round(Math.abs(v));
+        }
+
+        // 스크래치 타수는 "각자의 G핸디를 먼저 정수로 반올림한 뒤, 그 정수끼리 뺀 값"입니다.
+        // 소수점 차이를 먼저 내고 반올림하면 4.1과 4.2처럼 사실상 같은 실력이 0타/1타로 갈리고,
+        // 6.2와 6.8처럼 0.6이나 벌어진 사이가 같은 타수로 묶이는 일이 생겨서 이렇게 바꿨습니다.
+        // 예) 민 3.7→4, 호 4.1→4, 혁 4.2→4, 훈 6.2→6, 규 6.8→7 ⇒ 앞 셋은 스크래치, 훈 +2타, 규 +3타.
         function getScratchStandings() {
             if (DATES.length === 0) return [];
             const latestIdx = scratchBaseIdx();
-            const standings = PLAYERS.map((player, i) => ({
-                player,
-                color: playerLineColor(player, i),
-                gHandicap: GOLF_DATA[player].gHandicap[latestIdx]
-            }));
-            const minGH = Math.min(...standings.map(s => s.gHandicap));
+            const standings = PLAYERS.map((player, i) => {
+                const gHandicap = GOLF_DATA[player].gHandicap[latestIdx];
+                return {
+                    player,
+                    color: playerLineColor(player, i),
+                    gHandicap,
+                    ghRounded: scratchRound(gHandicap)
+                };
+            });
+            const minGH = Math.min(...standings.map(s => s.ghRounded));
             standings.forEach(s => {
-                // s.gHandicap - minGH는 항상 0 이상이라 지금은 안전하지만, renderScratchView의
-                // 상대별 비교와 같은 방식(절대값 반올림 후 부호 적용)으로 통일해 둡니다.
-                s.diff = Math.round(Math.abs(s.gHandicap - minGH));
+                s.diff = s.ghRounded - minGH; // 이미 정수끼리의 뺄셈이라 추가 반올림이 필요 없습니다.
             });
             return standings;
         }
@@ -3537,7 +3551,7 @@
                                 <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center font-bold text-xs sm:text-sm shrink-0">${s.player}</span>
                                 <div class="min-w-0">
                                     <p class="text-xs sm:text-sm font-bold text-white truncate">${s.player} 플레이어${selectedTag}</p>
-                                    <p class="text-[10px] sm:text-[11px] text-slate-400">G핸디 ${s.gHandicap.toFixed(1)}</p>
+                                    <p class="text-[10px] sm:text-[11px] text-slate-400">G핸디 ${s.gHandicap.toFixed(1)} → 반올림 ${s.ghRounded}</p>
                                 </div>
                             </div>
                             <div class="text-right shrink-0">
@@ -3554,15 +3568,12 @@
 
             const vsContainer = document.getElementById('scratchVsListContainer');
             if (vsContainer) {
-                const selectedGH = GOLF_DATA[selectedPlayer].gHandicap[latestIdx];
+                // 순위표와 같은 규칙: 두 사람의 G핸디를 각각 정수로 반올림한 뒤 그 정수끼리 뺍니다.
+                const selectedRounded = scratchRound(GOLF_DATA[selectedPlayer].gHandicap[latestIdx]);
                 const others = PLAYERS.filter(p => p !== selectedPlayer).map(p => {
                     const gh = GOLF_DATA[p].gHandicap[latestIdx];
-                    const rawDiff = gh - selectedGH;
-                    // Math.round는 음수 .5는 0 방향으로 반올림해(-2.5 → -2) 순위표의 반올림(+3타 등)과
-                    // 어긋나 보일 수 있으므로, 절대값을 반올림한 뒤 부호를 붙여 항상 "0에서 먼 방향"으로
-                    // 일관되게 반올림합니다. 예: 5.5와 3.0의 차이는 어느 쪽에서 봐도 3타.
-                    const diff = Math.sign(rawDiff) * Math.round(Math.abs(rawDiff));
-                    return { player: p, gh, diff };
+                    const diff = scratchRound(gh) - selectedRounded;
+                    return { player: p, gh, ghRounded: scratchRound(gh), diff };
                 });
 
                 vsContainer.innerHTML = others.map(o => {
@@ -3580,7 +3591,7 @@
                                 <span class="w-7 h-7 rounded-full bg-slate-700 text-slate-100 flex items-center justify-center font-bold text-xs shrink-0">${o.player}</span>
                                 <div class="min-w-0">
                                     <p class="text-xs sm:text-sm font-bold text-white truncate">${selectedPlayer} vs ${o.player}</p>
-                                    <p class="text-[10px] text-slate-400">G핸디 ${o.gh.toFixed(1)}</p>
+                                    <p class="text-[10px] text-slate-400">G핸디 ${o.gh.toFixed(1)} → 반올림 ${o.ghRounded}</p>
                                 </div>
                             </div>
                             ${badge}
