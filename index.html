@@ -1246,7 +1246,7 @@
                             <svg class="inline-block align-[-0.15em] shrink-0 text-emerald-400" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg> 스크래치 게임
                         </h3>
                         <p class="text-[11px] sm:text-xs text-slate-400 mt-0.5">
-                            <span id="crGameRangeLabel">최근 5회차</span> 총타수 평균 기준, 가장 낮은 평균 타수 플레이어가 스크래치(0타)이고 나머지는 그 차이만큼(반올림) 타수를 받습니다.
+                            <span id="crGameRangeLabel">최근 5회차</span> 총타수 평균 기준입니다. 스크린골프 스크래치 게임과 같이 각자의 평균을 <span class="text-slate-300 font-semibold">먼저 정수로 반올림</span>한 뒤(예: 93.4·93.6 → 93·94) 그 정수끼리 비교해, 가장 낮은 플레이어가 스크래치(0타)이고 나머지는 그 차이만큼 타수를 받습니다.
                         </p>
                     </div>
 
@@ -1261,7 +1261,7 @@
                             <svg class="inline-block align-[-0.15em] shrink-0 text-emerald-400" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                             <span id="crGameSelectedPlayerLabel">민</span> 기준 상대별 타수 차이
                         </h4>
-                        <p class="text-[11px] sm:text-xs text-slate-400 mb-3">상단 "플레이어 선택"에서 고른 플레이어와 나머지 동호회원의 최근 5회차(선택 라운드 포함 직전 5회) 총타수 평균 차이(반올림)입니다.</p>
+                        <p class="text-[11px] sm:text-xs text-slate-400 mb-3">상단 "플레이어 선택"에서 고른 플레이어와 나머지 동호회원의 최근 5회차(선택 라운드 포함 직전 5회) 총타수 평균 차이입니다. 순위표와 같이 <span class="text-slate-300 font-semibold">각자 평균을 정수로 반올림한 뒤</span> 뺀 값이라, 두 표의 타수가 항상 맞아떨어집니다.</p>
                         <div id="crGameVsListContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             <!-- JS Populated -->
                         </div>
@@ -3487,9 +3487,11 @@
             return (idx >= 0 && idx < DATES.length) ? idx : DATES.length - 1;
         }
 
-        // G핸디를 타수로 바꿀 때 쓰는 반올림입니다. Math.round는 음수의 .5를 0 방향으로 올려서
-        // (-2.5 → -2) 양수와 규칙이 어긋나므로, 절대값을 반올림한 뒤 부호를 붙여 항상
-        // "0에서 먼 방향"으로 맞춥니다. G핸디가 음수인 플레이어가 있어도 규칙이 같습니다.
+        // 스크래치 게임에서 지표값(G핸디 / 총타수 평균)을 타수로 바꿀 때 쓰는 반올림입니다.
+        // Math.round는 음수의 .5를 0 방향으로 올려서(-2.5 → -2) 양수와 규칙이 어긋나므로,
+        // 절대값을 반올림한 뒤 부호를 붙여 항상 "0에서 먼 방향"으로 맞춥니다. G핸디가 음수인
+        // 플레이어가 있어도 규칙이 같습니다.
+        // 스크린골프 게임(getScratchStandings)과 코스라운드 게임(crGetGameStandings)이 함께 씁니다.
         function scratchRound(v) {
             if (v == null || isNaN(v)) return 0;
             return Math.sign(v) * Math.round(Math.abs(v));
@@ -4920,17 +4922,18 @@
             PLAYERS.forEach((player, i) => {
                 const picked = crGetPlayerRecentValidValues(player, metric.key, 5);
                 if (!picked.length) return; // 유효한 기록이 하나도 없는 선수는 게임 순위에서 제외
-                // 화면에 표시되는 평균은 반올림된 정수이므로, 순위 차이(diff)도 반올림 전
-                // 원본 평균이 아니라 이 "표시되는" 반올림값 기준으로 계산해야 화면상 숫자와
-                // 어긋나지 않습니다 (예: 89.6→90, 94.3→94로 표시되는데 차이를 4.7→5로 계산하면
-                // 화면의 90/94(차이 4)와 배지의 +5가 맞지 않아 보이는 문제를 방지).
-                const avg = Math.round(picked.reduce((a, p) => a + p.val, 0) / picked.length);
+                // 스크린골프 스크래치 게임과 같은 순서입니다: 각자의 최근 5회 평균을 먼저 정수로
+                // 반올림하고(rawAvg → avg), 그 정수끼리 빼서 타수를 냅니다. 소수점 차이를 먼저 내고
+                // 반올림하면 93.4와 93.6처럼 사실상 같은 실력이 0타/1타로 갈리고, 화면에 표시되는
+                // 정수 평균(93/94, 차이 1)과 배지의 타수가 어긋나 보이는 문제도 생깁니다.
+                const rawAvg = picked.reduce((a, p) => a + p.val, 0) / picked.length;
+                const avg = scratchRound(rawAvg);
                 const oldestIdx = picked[picked.length - 1].idx;
-                standings.push({ player, color: playerLineColor(player, i), avg, roundCount: picked.length, oldestIdx });
+                standings.push({ player, color: playerLineColor(player, i), rawAvg, avg, roundCount: picked.length, oldestIdx });
             });
             if (!standings.length) return [];
             const minAvg = Math.min(...standings.map(s => s.avg));
-            standings.forEach(s => { s.diff = s.avg - minAvg; });
+            standings.forEach(s => { s.diff = s.avg - minAvg; }); // 정수끼리의 뺄셈이라 추가 반올림 불필요
             return standings;
         }
 
@@ -4952,7 +4955,8 @@
                 return;
             }
 
-            const standings = crGetGameStandings().sort((a, b) => a.avg - b.avg);
+            // 반올림 후에는 동점이 흔하므로, 같은 타수끼리는 반올림 전 실제 평균 순으로 세웁니다.
+            const standings = crGetGameStandings().sort((a, b) => a.rawAvg - b.rawAvg);
 
             if (listContainer) {
                 if (!standings.length) {
@@ -4977,8 +4981,8 @@
                                     <span class="w-6 h-6 sm:w-7 sm:h-7 rounded-full ${rankBadgeClass} flex items-center justify-center font-bold text-[11px] sm:text-xs shrink-0">${i + 1}</span>
                                     <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center font-bold text-xs sm:text-sm shrink-0">${s.player}</span>
                                     <div class="min-w-0">
-                                        <p class="text-xs sm:text-sm font-bold text-white truncate">${s.player} 플레이어 <span class="text-xs sm:text-sm font-bold text-emerald-300">${Math.round(s.avg)}</span>${selectedTag}</p>
-                                        <p class="text-[10px] sm:text-[11px] text-slate-400">평균 총타수 ${Math.round(s.avg)}타 (${s.roundCount}회차 평균)</p>
+                                        <p class="text-xs sm:text-sm font-bold text-white truncate">${s.player} 플레이어 <span class="text-xs sm:text-sm font-bold text-emerald-300">${s.avg}</span>${selectedTag}</p>
+                                        <p class="text-[10px] sm:text-[11px] text-slate-400">평균 총타수 ${s.rawAvg.toFixed(1)} → 반올림 ${s.avg}타 (${s.roundCount}회차 평균)</p>
                                     </div>
                                 </div>
                                 <div class="text-right shrink-0">
@@ -4997,7 +5001,9 @@
                 } else {
                     const others = standings.filter(s => s.player !== selectedPlayer);
                     vsContainer.innerHTML = others.map(o => {
-                        const diff = Math.round(o.avg - selfEntry.avg);
+                        // 순위표와 같은 규칙: 두 사람의 평균을 각각 정수로 반올림한 뒤 그 정수끼리 뺍니다.
+                        // (o.avg / selfEntry.avg는 crGetGameStandings에서 이미 반올림된 값입니다.)
+                        const diff = o.avg - selfEntry.avg;
                         let badge;
                         if (diff > 0) {
                             badge = `<span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold whitespace-nowrap">${diff}타 줌</span>`;
@@ -5012,7 +5018,7 @@
                                     <span class="w-7 h-7 rounded-full bg-slate-700 text-slate-100 flex items-center justify-center font-bold text-xs shrink-0">${o.player}</span>
                                     <div class="min-w-0">
                                         <p class="text-xs sm:text-sm font-bold text-white truncate">${selectedPlayer} vs ${o.player}</p>
-                                        <p class="text-[10px] text-slate-400">평균 총타수 ${Math.round(o.avg)}타</p>
+                                        <p class="text-[10px] text-slate-400">평균 총타수 ${o.rawAvg.toFixed(1)} → 반올림 ${o.avg}타</p>
                                     </div>
                                 </div>
                                 ${badge}
