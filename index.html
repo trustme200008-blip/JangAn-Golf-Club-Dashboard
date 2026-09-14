@@ -2913,6 +2913,14 @@
 
             const ctx = document.getElementById('compareChart').getContext('2d');
             const dataValues = PLAYERS.map(player => GOLF_DATA[player][metricKey][idx]);
+            // 드라이버 비거리는 세로축을 185~220m로 고정합니다. 185m 미만 기록은 축 밖이라 막대가
+            // 사라지므로, 그래프에는 축 최저값(185)으로 찍고 툴팁에는 실제 기록을 그대로 보여줍니다.
+            // 0/미기록은 막대를 그리지 않도록 끌어올리지 않습니다.
+            const DISTANCE_AXIS_MIN = 185;
+            const DISTANCE_AXIS_MAX = 220;
+            const isDistance = metricKey === 'distance';
+            const isBelowAxis = v => isDistance && v != null && !isNaN(v) && v > 0 && v < DISTANCE_AXIS_MIN;
+            const chartValues = dataValues.map(v => isBelowAxis(v) ? DISTANCE_AXIS_MIN : v);
             const theme = chartColors();
 
             // Highlight the currently selected player in the chart
@@ -2929,11 +2937,13 @@
                     labels: PLAYERS,
                     datasets: [{
                         label: metricLabels[metricKey],
-                        data: dataValues,
+                        data: chartValues,
                         backgroundColor: backgroundColors,
                         borderColor: borderColors,
                         borderWidth: 1,
-                        borderRadius: 6
+                        borderRadius: 6,
+                        // 축 최저값에 딱 맞춰 찍힌 막대는 높이가 0이라 안 보이므로 최소 높이를 줍니다.
+                        minBarLength: isDistance ? 6 : 0
                     }]
                 },
                 options: {
@@ -2948,8 +2958,11 @@
                                     if (label) {
                                         label += ': ';
                                     }
-                                    if (context.parsed.y !== null) {
-                                        label += context.parsed.y;
+                                    // 그래프 값(chartValues)이 아니라 실제 기록(dataValues)을 보여줍니다.
+                                    const actual = dataValues[context.dataIndex];
+                                    if (actual != null) {
+                                        label += actual;
+                                        if (isBelowAxis(actual)) label += ` (${DISTANCE_AXIS_MIN} 미만, ${DISTANCE_AXIS_MIN}으로 표시)`;
                                     }
                                     return label;
                                 }
@@ -2963,12 +2976,11 @@
                         },
                         y: {
                             // 드라이버 비거리는 선수 간 차이가 작아 축을 185~220m로 좁혀 보여줍니다.
-                            // 185m 미만 기록(예: 04/20 호 184.8m)은 범위 밖이라 막대가 안 보이지만 툴팁 값은 그대로입니다.
-                            min: metricKey === 'distance' ? 185 : undefined,
-                            max: metricKey === 'distance' ? 220 : undefined,
+                            min: isDistance ? DISTANCE_AXIS_MIN : undefined,
+                            max: isDistance ? DISTANCE_AXIS_MAX : undefined,
                             ticks: {
                                 color: theme.tick,
-                                stepSize: metricKey === 'distance' ? 10 : undefined
+                                stepSize: isDistance ? 10 : undefined
                             },
                             grid: { color: theme.grid }
                         }
