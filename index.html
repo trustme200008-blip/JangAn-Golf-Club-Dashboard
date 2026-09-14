@@ -2962,9 +2962,9 @@
                             grid: { display: false }
                         },
                         y: {
-                            // 드라이버 비거리는 선수 간 차이가 작아 축을 190~220m로 좁혀 보여줍니다.
-                            // 190m 미만 기록은 이 범위 밖이라 막대가 보이지 않습니다(툴팁 값은 그대로).
-                            min: metricKey === 'distance' ? 190 : undefined,
+                            // 드라이버 비거리는 선수 간 차이가 작아 축을 185~220m로 좁혀 보여줍니다.
+                            // 185m 미만 기록(예: 04/20 호 184.8m)은 범위 밖이라 막대가 안 보이지만 툴팁 값은 그대로입니다.
+                            min: metricKey === 'distance' ? 185 : undefined,
                             max: metricKey === 'distance' ? 220 : undefined,
                             ticks: {
                                 color: theme.tick,
