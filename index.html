@@ -3423,7 +3423,13 @@
                             grid: { color: theme.grid }
                         },
                         y: {
-                            ticks: { color: theme.tick },
+                            // 홀당 퍼팅 수는 선수 간 차이가 작아 축 최저값을 1.2로 고정하고
+                            // 0.1 간격 눈금으로 보여줍니다. (최댓값은 자동 산정에 맡깁니다.)
+                            min: metricKey === 'putt' ? 1.2 : undefined,
+                            ticks: {
+                                color: theme.tick,
+                                stepSize: metricKey === 'putt' ? 0.1 : undefined
+                            },
                             grid: { color: theme.grid }
                         }
                     }
