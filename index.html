@@ -4386,12 +4386,32 @@
             localStorage.setItem(CR_GOALS_CACHE_KEY, JSON.stringify(CR_GOALS));
         }
 
+        // 아직 재배포되지 않은(옛) Apps Script는 SHEET_NAMES에 'courseGoals'가 없어서,
+        // getOrCreateSheet가 알 수 없는 type을 전부 SHEET_NAMES.screenGolf(= 실제 스크린골프
+        // "Rounds" 시트)로 흘려보냅니다. 그 상태에서 목표 타수를 "저장"하면 이 브라우저가
+        // ?type=courseGoals로 저장을 시도한 요청이 실제로는 스크린골프 원본 데이터가 있는
+        // Rounds 시트에 가서 엉뚱한 행을 쓰거나 덮어써 버립니다. 그래서 저장 전에 반드시
+        // 한 번 조회해, 응답 행에 courseGoals에는 있을 수 없는 'gHandicap' 필드가 보이면
+        // "아직 재배포 전"으로 판단하고 저장을 막습니다. (조회만으로는 아무것도 바뀌지 않아 안전합니다.)
+        let crGoalsBackendReady = null; // null=아직 확인 전, true=재배포됨, false=재배포 필요(쓰기 차단)
+
         async function loadCourseGoalsFromSheet() {
             if (!hasSheetBackend()) return;
             try {
                 const res = await fetch(SHEET_API_URL + '?type=courseGoals', { method: 'GET' });
                 if (!res.ok) throw new Error('목표 타수 조회 응답 오류: ' + res.status);
                 const rows = await res.json();
+
+                if (rows.some(row => 'gHandicap' in row)) {
+                    // Code.gs가 courseGoals 타입을 아직 모르는 옛 배포 — 스크린골프 Rounds 시트가
+                    // 대신 돌아온 상태입니다. 이 응답은 목표 타수 데이터가 아니므로 사용하지 않고,
+                    // 쓰기(crSaveGoalsForYear)도 막습니다.
+                    crGoalsBackendReady = false;
+                    console.warn('Code.gs가 아직 재배포되지 않아(구버전) 목표 타수를 구글 시트와 동기화할 수 없습니다. 이 브라우저에만 임시 저장됩니다.');
+                    return;
+                }
+                crGoalsBackendReady = true;
+
                 const goals = {};
                 rows.forEach(row => {
                     // 시트 열 이름은 'date'지만 CourseGoals에서는 여기에 연도 문자열이 들어갑니다.
@@ -4410,12 +4430,18 @@
 
         // year(문자열)의 목표 타수를 한 번에 저장합니다. targetsByPlayer = { 민: 92, 혁: 90, ... }
         // (값이 없는 선수는 records에서 빠지고, 시트에도 그 선수 행이 새로 생기지 않습니다.)
+        // 반환값: 구글 시트에 실제로 반영됐는지(true) 아니면 이 브라우저에만 저장됐는지(false).
         async function crSaveGoalsForYear(year, targetsByPlayer) {
             if (!CR_GOALS[year]) CR_GOALS[year] = {};
             Object.assign(CR_GOALS[year], targetsByPlayer);
             crPersistGoalsLocalCache();
 
-            if (!hasSheetBackend()) return;
+            if (!hasSheetBackend()) return false;
+            if (crGoalsBackendReady === false) {
+                // 위 loadCourseGoalsFromSheet에서 이미 옛 배포로 확인된 경우 — 절대 쓰기를
+                // 시도하지 않습니다(스크린골프 Rounds 시트를 오염시킬 수 있음).
+                return false;
+            }
             try {
                 const records = PLAYERS
                     .filter(p => CR_GOALS[year][p] != null && !isNaN(CR_GOALS[year][p]))
@@ -4425,8 +4451,10 @@
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({ type: 'courseGoals', date: year, records: records, token: adminApiToken })
                 });
+                return true;
             } catch (err) {
                 console.warn('구글 시트에 목표 타수 저장을 실패해 이 브라우저에만 저장됩니다.', err);
+                return false;
             }
         }
 
@@ -5289,8 +5317,16 @@
                 const original = btn.textContent;
                 btn.textContent = '저장 중...';
                 try {
-                    await crSaveGoalsForYear(crSelectedYear, targets);
+                    const syncedToSheet = await crSaveGoalsForYear(crSelectedYear, targets);
                     crRenderYearlyGoalPanel();
+                    if (hasSheetBackend() && !syncedToSheet) {
+                        showRoundNotification(
+                            '이 브라우저에만 저장됨',
+                            'Code.gs가 아직 재배포되지 않아 목표 타수가 구글 시트에는 반영되지 않았습니다. README의 안내대로 Apps Script를 재배포하면 다른 기기에서도 보입니다.'
+                        );
+                    } else {
+                        showRoundNotification('목표 타수 저장됨', `${crSelectedYear}년 목표 타수가 저장되었습니다.`);
+                    }
                 } finally {
                     btn.disabled = false;
                     btn.textContent = original;
