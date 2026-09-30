@@ -1274,6 +1274,52 @@
                         <canvas id="crCompanionTrendChart"></canvas>
                     </div>
                 </div>
+
+                <!-- 연도별 평균 타수 비교: 전년 대비 증감·증감률, 연간 목표 타수, 목표대비 달성률 -->
+                <div class="glass-panel p-4 sm:p-6 rounded-2xl">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6">
+                        <div>
+                            <h4 class="text-base font-bold text-white flex items-center gap-2">
+                                <svg class="inline-block align-[-0.15em] shrink-0 text-emerald-400" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> 연도별 평균 타수 비교
+                            </h4>
+                            <p id="crGoalDescText" class="text-[11px] sm:text-xs text-slate-400 mt-0.5">-</p>
+                        </div>
+                        <button id="crGoalSaveBtn" type="button" class="admin-only shrink-0 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg shadow-emerald-500/20 active:scale-95">
+                            목표 타수 저장
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto custom-scrollbar mb-6">
+                        <table class="w-full text-left border-collapse min-w-[600px] text-xs sm:text-sm">
+                            <thead>
+                                <tr class="border-b border-slate-700 text-[11px] text-slate-500 bg-slate-900/60">
+                                    <th class="p-2.5 sm:p-3 whitespace-nowrap">플레이어</th>
+                                    <th id="crGoalPrevYearHead" class="p-2.5 sm:p-3 text-right whitespace-nowrap">전년 평균</th>
+                                    <th id="crGoalCurYearHead" class="p-2.5 sm:p-3 text-right whitespace-nowrap">당해 평균</th>
+                                    <th class="p-2.5 sm:p-3 text-right whitespace-nowrap">증감</th>
+                                    <th class="p-2.5 sm:p-3 text-right whitespace-nowrap">증감률</th>
+                                    <th class="p-2.5 sm:p-3 text-right whitespace-nowrap">목표 타수</th>
+                                    <th class="p-2.5 sm:p-3 text-right whitespace-nowrap">목표대비 달성률</th>
+                                </tr>
+                            </thead>
+                            <tbody id="crGoalTableBody" class="divide-y divide-slate-800 font-medium">
+                                <!-- JS Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="h-64 sm:h-80 w-full relative mb-6">
+                        <canvas id="crGoalChart"></canvas>
+                    </div>
+
+                    <div class="rounded-xl p-3.5 border-l-4 border-l-emerald-500 bg-slate-800/40">
+                        <div class="flex items-center gap-1.5 mb-1.5">
+                            <svg class="inline-block align-[-0.15em] shrink-0 text-emerald-400" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="13" cy="14.5" r="1.5"/><circle cx="17" cy="7" r="1.5"/><circle cx="19.5" cy="4.5" r="1.5"/><path d="M6.8 16.3 8 13.2"/><path d="M10.2 11.5 12 13.3"/><path d="M14.2 13.4 16 8.6"/><path d="M18.2 6.1 19 5.3"/></svg>
+                            <span class="text-xs font-bold text-white">AI 분석 평가</span>
+                        </div>
+                        <p id="crGoalAIText" class="text-[11px] sm:text-xs text-slate-300 leading-relaxed">-</p>
+                    </div>
+                </div>
             </div>
 
             <!-- VIEW: GAME (스크래치 게임) -->
@@ -1895,6 +1941,10 @@
             adminIconLock.classList.toggle('hidden', isAdmin);
             adminIconUnlock.classList.toggle('hidden', !isAdmin);
             adminModeLabelEl.textContent = isAdmin ? '관리자 모드' : '사용자 모드';
+            // "목표 타수" 열은 admin-only 버튼처럼 CSS로만 숨길 수 없고(입력 칸 자체를 읽기전용
+            // 텍스트로 바꿔야 함) 직접 다시 그려줘야 합니다. 아직 이 탭 DOM이 없으면 함수 안에서
+            // 조용히 리턴합니다.
+            if (typeof crRenderYearlyGoalPanel === 'function') crRenderYearlyGoalPanel();
         }
 
         function openAdminPinModal() {
@@ -1961,6 +2011,7 @@
             await loadPlayersFromSheet();
             await loadRoundsFromSheet();
             await loadCourseRoundsFromSheet();
+            await loadCourseGoalsFromSheet();
             await loadScoreCardFromSheet();
             selectedDateIndex = DATES.length - 1;
 
@@ -4093,7 +4144,13 @@
         let crCompanionTrendChart = null; // 코스라운드 동반자 지표 비교 꺾은선 그래프
         let crGameChart = null;
         let crCompareChart = null;
+        let crGoalChart = null; // 연도별 평균 타수 비교(전년 대비/목표 대비) 막대 그래프
         const CR_CACHE_KEY = 'jangan_golf_course_round_cache_v1';
+
+        // 연도별 목표 타수. CR_GOALS[year][player] = 목표 타수(숫자). 관리자가 입력하고,
+        // 구글 시트("CourseGoals" 탭)에 동기화해 다른 기기/브라우저에서도 같은 값이 보입니다.
+        let CR_GOALS = {};
+        const CR_GOALS_CACHE_KEY = 'jangan_golf_course_goals_cache_v1';
 
         // CR_DATA_ALL[name] 쪽(전체 연도 원본) 배열을 CR_DATES_ALL 길이에 맞춰 채웁니다.
         function ensureCRPlayerDataAll(name) {
@@ -4315,8 +4372,67 @@
             }
         }
 
+        // ===== 연도별 목표 타수 (CourseGoals 시트 연동) =====
+        function crLoadGoalsFromLocalCache() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(CR_GOALS_CACHE_KEY) || 'null');
+                if (saved && typeof saved === 'object') CR_GOALS = saved;
+            } catch (err) {
+                console.warn('목표 타수 캐시를 불러오지 못했습니다.', err);
+            }
+        }
+
+        function crPersistGoalsLocalCache() {
+            localStorage.setItem(CR_GOALS_CACHE_KEY, JSON.stringify(CR_GOALS));
+        }
+
+        async function loadCourseGoalsFromSheet() {
+            if (!hasSheetBackend()) return;
+            try {
+                const res = await fetch(SHEET_API_URL + '?type=courseGoals', { method: 'GET' });
+                if (!res.ok) throw new Error('목표 타수 조회 응답 오류: ' + res.status);
+                const rows = await res.json();
+                const goals = {};
+                rows.forEach(row => {
+                    // 시트 열 이름은 'date'지만 CourseGoals에서는 여기에 연도 문자열이 들어갑니다.
+                    const year = String(row.date || '').trim();
+                    const target = parseFloat(row.targetScore);
+                    if (!year || !row.player || isNaN(target)) return;
+                    if (!goals[year]) goals[year] = {};
+                    goals[year][row.player] = target;
+                });
+                CR_GOALS = goals;
+                crPersistGoalsLocalCache();
+            } catch (err) {
+                console.warn('구글 시트에서 목표 타수를 불러오지 못해 로컬 데이터로만 표시합니다.', err);
+            }
+        }
+
+        // year(문자열)의 목표 타수를 한 번에 저장합니다. targetsByPlayer = { 민: 92, 혁: 90, ... }
+        // (값이 없는 선수는 records에서 빠지고, 시트에도 그 선수 행이 새로 생기지 않습니다.)
+        async function crSaveGoalsForYear(year, targetsByPlayer) {
+            if (!CR_GOALS[year]) CR_GOALS[year] = {};
+            Object.assign(CR_GOALS[year], targetsByPlayer);
+            crPersistGoalsLocalCache();
+
+            if (!hasSheetBackend()) return;
+            try {
+                const records = PLAYERS
+                    .filter(p => CR_GOALS[year][p] != null && !isNaN(CR_GOALS[year][p]))
+                    .map(p => ({ player: p, targetScore: CR_GOALS[year][p] }));
+                await fetch(SHEET_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ type: 'courseGoals', date: year, records: records, token: adminApiToken })
+                });
+            } catch (err) {
+                console.warn('구글 시트에 목표 타수 저장을 실패해 이 브라우저에만 저장됩니다.', err);
+            }
+        }
+
         function initCourseRoundModule() {
             crLoadFromLocalCache();
+            crLoadGoalsFromLocalCache();
             PLAYERS.forEach(ensureCRPlayerDataAll);
             crSyncYearSelectUI();
             crRebuildYearView();
@@ -4326,6 +4442,7 @@
             crSetupCourseNameAutocomplete('crEditRoundCourseName', 'crEditRoundCourseNameSuggest');
             crInitPlayerInputs();
             crSetupEventListeners();
+            crSetupGoalPanelEvents();
             crSetMode('single');
         }
 
@@ -4889,6 +5006,7 @@
             document.getElementById('crTrendPlayerTitle').textContent = selectedPlayer;
             crRenderTrendChart();
             crRenderCompanionTrendChart();
+            crRenderYearlyGoalPanel();
         }
 
         function crRenderTrendChart() {
@@ -4993,6 +5111,193 @@
             });
         }
 
+        // ===== 연도별 평균 타수 비교 (전년 대비 증감·증감률, 목표 타수, 목표대비 달성률) =====
+        // "당해년도"는 상단에서 선택된 연도(crSelectedYear)를 그대로 따라갑니다. 다른 탭들도
+        // 전부 이 연도 선택을 기준으로 동작하므로 여기서도 일관되게 맞췄습니다.
+        // 타수는 낮을수록 좋은 지표라, 달성률은 "목표 ÷ 실제 평균 × 100"으로 정의합니다 —
+        // 100%를 넘으면 목표보다 더 잘 쳤다는 뜻입니다(예: 목표 90, 실제 88 → 102.3%).
+        function crComputeGoalRows() {
+            const year = crSelectedYear;
+            const prevYear = year ? String(Number(year) - 1) : null;
+            return PLAYERS.map(player => {
+                const curAvg = year ? crGetPlayerAvgForYear(player, year, 'score') : null;
+                const prevAvg = prevYear ? crGetPlayerAvgForYear(player, prevYear, 'score') : null;
+                const target = (year && CR_GOALS[year] && CR_GOALS[year][player] != null) ? CR_GOALS[year][player] : null;
+                const diff = (curAvg != null && prevAvg != null) ? curAvg - prevAvg : null;
+                const diffPct = (diff != null && prevAvg) ? (diff / prevAvg) * 100 : null;
+                const achievement = (target != null && curAvg) ? (target / curAvg) * 100 : null;
+                return { player, curAvg, prevAvg, diff, diffPct, target, achievement };
+            });
+        }
+
+        function crRenderYearlyGoalPanel() {
+            const tbody = document.getElementById('crGoalTableBody');
+            if (!tbody) return; // 아직 이 탭 HTML이 없는 예전 캐시 화면 등 방어
+
+            const year = crSelectedYear;
+            const prevYear = year ? String(Number(year) - 1) : null;
+            const fmt1 = v => (v == null || isNaN(v)) ? '-' : v.toFixed(1);
+            const fmtSigned = (v, suffix) => {
+                if (v == null || isNaN(v)) return '-';
+                const sign = v > 0 ? '+' : ''; // 음수는 Number가 이미 '-'를 붙여줍니다.
+                return `${sign}${v.toFixed(1)}${suffix}`;
+            };
+
+            document.getElementById('crGoalPrevYearHead').textContent = prevYear ? `${prevYear}년 평균` : '전년 평균';
+            document.getElementById('crGoalCurYearHead').textContent = year ? `${year}년 평균` : '당해 평균';
+            document.getElementById('crGoalDescText').innerHTML =
+                `<span class="text-slate-300 font-semibold">${year || '-'}년</span> 총타수 평균을 <span class="text-slate-300 font-semibold">${prevYear || '-'}년</span>과 비교합니다. `
+                + `목표 타수는 관리자가 입력하며, <span class="text-slate-300 font-semibold">달성률 = 목표 ÷ 당해 평균 × 100</span>으로 계산해 100%를 넘으면 목표보다 더 잘 친 것입니다.`;
+
+            const rows = crComputeGoalRows();
+
+            tbody.innerHTML = rows.map(r => {
+                const diffColor = r.diff == null ? 'text-slate-500' : (r.diff < 0 ? 'text-emerald-300' : (r.diff > 0 ? 'text-amber-300' : 'text-slate-300'));
+                const achieveColor = r.achievement == null ? 'text-slate-500' : (r.achievement >= 100 ? 'text-emerald-300' : 'text-amber-300');
+                const targetCell = isAdminMode
+                    ? `<input type="number" step="1" data-goal-player="${r.player}" value="${r.target != null ? r.target : ''}" placeholder="미입력" style="width:84px" class="bg-slate-900 border border-slate-700 text-emerald-300 font-semibold p-2 text-xs rounded-lg focus:outline-none focus:border-emerald-500 text-right">`
+                    : `<span class="${r.target != null ? 'text-slate-200' : 'text-slate-500'}">${r.target != null ? r.target.toFixed(0) : '미입력'}</span>`;
+                return `
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="p-2.5 sm:p-3 font-bold text-white whitespace-nowrap">${r.player}</td>
+                        <td class="p-2.5 sm:p-3 text-right text-slate-300 whitespace-nowrap">${fmt1(r.prevAvg)}</td>
+                        <td class="p-2.5 sm:p-3 text-right text-white font-bold whitespace-nowrap">${fmt1(r.curAvg)}</td>
+                        <td class="p-2.5 sm:p-3 text-right ${diffColor} whitespace-nowrap">${fmtSigned(r.diff, '')}</td>
+                        <td class="p-2.5 sm:p-3 text-right ${diffColor} whitespace-nowrap">${fmtSigned(r.diffPct, '%')}</td>
+                        <td class="p-2.5 sm:p-3 text-right whitespace-nowrap">${targetCell}</td>
+                        <td class="p-2.5 sm:p-3 text-right ${achieveColor} font-bold whitespace-nowrap">${r.achievement != null ? r.achievement.toFixed(1) + '%' : '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            crRenderGoalChart(rows, year, prevYear);
+            document.getElementById('crGoalAIText').textContent = crComputeGoalInsight(rows, year, prevYear);
+        }
+
+        function crRenderGoalChart(rows, year, prevYear) {
+            const canvas = document.getElementById('crGoalChart');
+            if (!canvas) return;
+            if (!isChartJsLoaded()) { showChartFallback('crGoalChart'); return; }
+
+            const theme = chartColors();
+            if (crGoalChart) crGoalChart.destroy();
+            crGoalChart = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: rows.map(r => r.player),
+                    datasets: [
+                        {
+                            label: prevYear ? `${prevYear}년 평균` : '전년 평균',
+                            data: rows.map(r => r.prevAvg),
+                            backgroundColor: hexToRgba(theme.accent, 0.35),
+                            borderColor: theme.accent,
+                            borderWidth: 1,
+                            borderRadius: 6
+                        },
+                        {
+                            label: year ? `${year}년 평균` : '당해 평균',
+                            data: rows.map(r => r.curAvg),
+                            backgroundColor: theme.accent,
+                            borderColor: theme.accent,
+                            borderWidth: 1,
+                            borderRadius: 6
+                        },
+                        {
+                            label: '목표 타수',
+                            data: rows.map(r => r.target),
+                            backgroundColor: hexToRgba('#f59e0b', 0.7),
+                            borderColor: '#f59e0b',
+                            borderWidth: 1,
+                            borderRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { color: theme.tick, font: { family: 'Noto Sans KR', weight: 'bold' }, boxWidth: 12 }
+                        }
+                    },
+                    scales: {
+                        x: { ticks: { color: theme.tick, font: { family: 'Noto Sans KR', weight: 'bold' } }, grid: { display: false } },
+                        y: { min: 70, ticks: { color: theme.tick }, grid: { color: theme.grid } }
+                    }
+                }
+            });
+        }
+
+        // AI 인사이트와 같은 방식(실제 외부 AI 호출이 아니라, 계산된 값을 규칙에 따라
+        // 한국어 문장으로 조립)으로 "연도별 평균 타수 비교" 패널의 간단한 평가를 만듭니다.
+        function crComputeGoalInsight(rows, year, prevYear) {
+            if (!year) return '연도 데이터를 불러오는 중입니다.';
+
+            const withDiff = rows.filter(r => r.diff != null);
+            const withTarget = rows.filter(r => r.achievement != null);
+
+            if (!withDiff.length && !withTarget.length) {
+                return `${prevYear}년 기록 또는 목표 타수가 아직 없어 비교할 내용이 없습니다. 전년도 라운드를 등록하거나 목표 타수를 입력하면 분석이 시작됩니다.`;
+            }
+
+            const parts = [];
+
+            if (withDiff.length) {
+                const mostImproved = withDiff.reduce((a, b) => (a.diff < b.diff ? a : b));
+                const mostWorsened = withDiff.reduce((a, b) => (a.diff > b.diff ? a : b));
+                if (mostImproved.diff < -0.5) {
+                    parts.push(`${mostImproved.player} 선수가 전년 대비 ${Math.abs(mostImproved.diff).toFixed(1)}타(${Math.abs(mostImproved.diffPct).toFixed(1)}%) 줄여 가장 크게 개선됐습니다.`);
+                }
+                if (mostWorsened.player !== mostImproved.player && mostWorsened.diff > 0.5) {
+                    parts.push(`반면 ${mostWorsened.player} 선수는 ${mostWorsened.diff.toFixed(1)}타(${mostWorsened.diffPct.toFixed(1)}%) 늘어 점검이 필요합니다.`);
+                }
+                if (!parts.length) {
+                    parts.push(`동호회원 전체적으로 전년 대비 타수 변화가 크지 않고 안정적인 흐름입니다.`);
+                }
+            }
+
+            if (withTarget.length) {
+                const achieved = withTarget.filter(r => r.achievement >= 100).map(r => r.player);
+                const missed = withTarget.filter(r => r.achievement < 100);
+                if (achieved.length) {
+                    parts.push(`${achieved.join(', ')} 선수는 ${year}년 목표를 이미 달성했습니다.`);
+                }
+                if (missed.length) {
+                    const closest = missed.reduce((a, b) => (a.achievement > b.achievement ? a : b));
+                    parts.push(`${closest.player} 선수는 목표까지 ${(closest.curAvg - closest.target).toFixed(1)}타 남아 가장 근접했습니다.`);
+                }
+            } else {
+                parts.push(`아직 입력된 목표 타수가 없습니다. 관리자 모드에서 목표를 입력하면 달성률을 함께 볼 수 있습니다.`);
+            }
+
+            return parts.join(' ');
+        }
+
+        function crSetupGoalPanelEvents() {
+            const btn = document.getElementById('crGoalSaveBtn');
+            if (!btn) return;
+            btn.addEventListener('click', async () => {
+                if (!crSelectedYear) return;
+                const inputs = document.querySelectorAll('#crGoalTableBody input[data-goal-player]');
+                const targets = {};
+                inputs.forEach(inp => {
+                    const v = parseFloat(inp.value);
+                    if (!isNaN(v)) targets[inp.dataset.goalPlayer] = v;
+                });
+                btn.disabled = true;
+                const original = btn.textContent;
+                btn.textContent = '저장 중...';
+                try {
+                    await crSaveGoalsForYear(crSelectedYear, targets);
+                    crRenderYearlyGoalPanel();
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = original;
+                }
+            });
+        }
+
         // 현재 선택된 라운드 일자(CR_DATES[crSelectedDateIndex])가 전체 데이터(CR_DATES_ALL)에서
         // 몇 번째 회차인지 돌려줍니다. 화면용 뷰(CR_DATES)는 연도로 걸러진 배열이라 인덱스가
         // 전체 데이터와 다르기 때문에, "최근 5회차" 계산의 기준점을 잡을 때는 이렇게 전체 기준
@@ -5032,6 +5337,22 @@
             ensureCRPlayerData(player);
             const arr = CR_DATA[player][metricKey] || [];
             const valid = arr.filter(v => v != null && !isNaN(v) && v !== 0);
+            if (!valid.length) return null;
+            return valid.reduce((a, v) => a + v, 0) / valid.length;
+        }
+
+        // crGetPlayerYearAvg와 같은 계산이지만, 화면에 현재 필터된 연도(crSelectedYear)가 아니라
+        // 임의의 연도를 인자로 받습니다. "연도별 평균 타수 비교" 패널은 당해년도와 전년도를
+        // 동시에 봐야 해서, 연도 선택과 무관하게 전체 데이터(CR_DATA_ALL)에서 직접 걸러냅니다.
+        function crGetPlayerAvgForYear(player, year, metricKey) {
+            ensureCRPlayerDataAll(player);
+            const arr = CR_DATA_ALL[player][metricKey] || [];
+            const valid = [];
+            CR_DATES_ALL.forEach((d, i) => {
+                if (d.slice(0, 4) !== year) return;
+                const v = arr[i];
+                if (v != null && !isNaN(v) && v !== 0) valid.push(v);
+            });
             if (!valid.length) return null;
             return valid.reduce((a, v) => a + v, 0) / valid.length;
         }

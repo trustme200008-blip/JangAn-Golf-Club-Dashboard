@@ -22,6 +22,10 @@
  *    - Players        : name  (신규 생성)
  *    - ScreenScoreCard: id, date, player, course, score  (스크린골프 스코어 카드, 신규 생성.
  *      날짜는 "YYYY-MM-DD" 전체 날짜를 그대로 저장합니다 — Rounds 탭의 "MM/DD"와 다르니 주의)
+ *    - CourseGoals    : date, player, targetScore  (코스라운드 "연도별 평균 타수 비교"의 연간 목표
+ *      타수, 신규 생성. CourseRounds와 같은 date+player upsert 로직을 그대로 재사용하려고
+ *      "date" 열 이름을 그대로 썼지만, 실제로 들어가는 값은 날짜가 아니라 연도(예: "2026")입니다.
+ *      시트에서 이 열이 "date"인데 값이 "2026"처럼만 보여도 정상입니다.)
  *
  * 스크린골프 기존 데이터 탭 이름은 SHEET_NAMES.screenGolf 값과 반드시 일치해야 합니다.
  * (장안 골프 동호회 시트 기준 실제 탭 이름은 "Rounds" 입니다 — 이미 반영되어 있습니다.)
@@ -39,14 +43,20 @@ const SHEET_NAMES = {
   screenGolf: 'Rounds',
   courseRounds: 'CourseRounds',
   players: 'Players',
-  screenScoreCard: 'ScreenScoreCard'
+  screenScoreCard: 'ScreenScoreCard',
+  courseGoals: 'CourseGoals'
 };
 
 const DEFAULT_HEADERS = {
   screenGolf: ['date', 'player', 'gHandicap', 'fir', 'gir', 'putt', 'distance'],
   courseRounds: ['date', 'player', 'handicap'],
   players: ['name'],
-  screenScoreCard: ['id', 'date', 'player', 'course', 'score', 'overPar']
+  screenScoreCard: ['id', 'date', 'player', 'course', 'score', 'overPar'],
+  // courseGoals는 doPost의 일반 처리 경로(saveRoundRecords/deleteRoundRecords)를 그대로 타므로
+  // 별도 함수 없이 여기 등록만 하면 동작합니다. 'date' 열에는 연도 문자열(예: "2026")이 들어가고,
+  // getDateNormalizer가 courseRounds가 아닌 타입은 normalizeDateCell을 쓰는데 이 함수는
+  // "YYYY-MM-DD" 형태만 변환하고 "2026" 같은 순수 연도 문자열은 그대로 통과시키므로 문제없습니다.
+  courseGoals: ['date', 'player', 'targetScore']
 };
 
 function doGet(e) {
