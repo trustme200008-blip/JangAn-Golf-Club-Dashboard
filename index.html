@@ -699,6 +699,59 @@
                 </div>
             </div>
 
+            <!-- 지표 종합 추이: 여러 지표를 5점 척도 점수로 환산해 한 그래프에 겹쳐 보기 -->
+            <div class="glass-panel p-4 sm:p-6 rounded-2xl">
+                <div class="mb-4">
+                    <h4 class="text-base font-bold text-white flex items-center gap-2">
+                        <svg class="inline-block align-[-0.15em] shrink-0 text-emerald-400" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                        <span id="multiTrendPlayerTitle">민</span> 지표 종합 추이 (복수 선택)
+                    </h4>
+                    <p id="multiTrendDesc" class="text-[11px] sm:text-xs text-slate-400 mt-0.5">-</p>
+                </div>
+
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <div id="multiTrendChips" class="flex flex-wrap gap-2">
+                        <!-- JS Populated -->
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select id="multiTrendRangeSelect" class="w-full sm:w-auto bg-slate-900 border border-slate-700 text-emerald-300 text-xs rounded-xl px-3 py-2 font-medium focus:outline-none">
+                            <option value="5">최근 5회</option>
+                            <option value="10">최근 10회</option>
+                            <option value="all">처음부터 선택 회차까지</option>
+                        </select>
+                        <button id="multiTrendLineBtn" type="button" class="shrink-0 px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700/60 rounded-xl text-xs font-semibold text-slate-200 transition whitespace-nowrap">추세선 켜짐</button>
+                    </div>
+                </div>
+
+                <div class="h-64 sm:h-80 w-full relative mb-6">
+                    <canvas id="multiTrendChart"></canvas>
+                </div>
+
+                <div class="overflow-x-auto custom-scrollbar mb-4">
+                    <table class="w-full text-left border-collapse min-w-[480px] text-xs sm:text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-700 text-[11px] text-slate-500 bg-slate-900/60">
+                                <th class="p-2.5 sm:p-3 whitespace-nowrap">지표</th>
+                                <th class="p-2.5 sm:p-3 text-right whitespace-nowrap">추세 변화</th>
+                                <th class="p-2.5 sm:p-3 text-right whitespace-nowrap">첫 → 마지막 회차</th>
+                                <th class="p-2.5 sm:p-3 text-right whitespace-nowrap">판정</th>
+                            </tr>
+                        </thead>
+                        <tbody id="multiTrendSummaryBody" class="divide-y divide-slate-800 font-medium">
+                            <!-- JS Populated -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="rounded-xl p-3.5 border-l-4 border-l-emerald-500 bg-slate-800/40">
+                    <div class="flex items-center gap-1.5 mb-1.5">
+                        <svg class="inline-block align-[-0.15em] shrink-0 text-emerald-400" style="width:1em;height:1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="13" cy="14.5" r="1.5"/><circle cx="17" cy="7" r="1.5"/><circle cx="19.5" cy="4.5" r="1.5"/><path d="M6.8 16.3 8 13.2"/><path d="M10.2 11.5 12 13.3"/><path d="M14.2 13.4 16 8.6"/><path d="M18.2 6.1 19 5.3"/></svg>
+                        <span class="text-xs font-bold text-white">AI 추이 평가</span>
+                    </div>
+                    <p id="multiTrendInsight" class="text-[11px] sm:text-xs text-slate-300 leading-relaxed">-</p>
+                </div>
+            </div>
+
             <!-- 동반자 지표 비교 그래프 (꺾은선형, 전체 동반자 추이 비교) -->
             <div class="glass-panel p-4 sm:p-6 rounded-2xl">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6">
@@ -1915,6 +1968,7 @@
             }
             if (activeMode === 'trend') {
                 renderTrendChart();
+                renderMultiTrend();
                 renderCompanionTrendChart();
                 renderCorrelationChart();
             }
@@ -2007,6 +2061,7 @@
             initCategorySwitch();
             initScoreCardModule();
             initScaleTableUI();
+            initMultiTrendUI();
 
             // 구글 시트 연동이 설정돼 있으면, 다른 플레이어/관리자가 추가해둔 데이터를 불러와 병합
             await loadPlayersFromSheet();
@@ -2541,6 +2596,7 @@
             renderSingleRadarChart();
             renderCompareView();
             renderTrendChart();
+            renderMultiTrend();
             renderCompanionTrendChart();
             renderCorrelationChart();
             renderScratchView();
@@ -3484,6 +3540,258 @@
                     }
                 }
             });
+        }
+
+        // ===== 지표 종합 추이 (복수 지표 선택, 5점 척도 환산) =====
+        // 다섯 지표는 단위·범위가 달라(핸디 0~12, 비율 30~65%, 퍼팅 1.4~1.9, 비거리 185~220m)
+        // 원래 값 그대로는 한 그래프에 겹칠 수 없고, 핸디·퍼팅은 "낮을수록" 좋은 반대 방향입니다.
+        // 그래서 오각형 차트와 같은 5점 척도 기준표(scoreFromScale)로 환산한 점수(1~5, 높을수록 우수)를
+        // 겹쳐 그립니다. 그러면 "비거리 선은 오르는데 페어웨이 선은 내려간다"가 그대로 읽힙니다.
+        const MULTI_TREND_STORAGE_KEY = 'jangan_golf_multi_trend_v1';
+        const MULTI_TREND_ORDER = ['distance', 'fir', 'gir', 'putt', 'gHandicap'];
+        // 추세 변화(점수)가 이 값 미만이면 "변화 없음"으로 봅니다(5점 만점 기준 약 비거리 4m / 비율 4%p).
+        const MULTI_TREND_FLAT_EPS = 0.2;
+        // topic/subj: 은·는 / 이·가 조사를 미리 붙인 이름, up/down: raw 값이 늘 때/줄 때의 서술어(어간).
+        const MULTI_TREND_META = {
+            distance:  { label: '드라이버 비거리', color: '#a855f7', rawUnit: 'm', deltaUnit: 'm',  dec: 1, topic: '드라이버 비거리는', subj: '드라이버 비거리가', up: '늘었',   down: '줄었' },
+            fir:       { label: '페어웨이 안착률', color: '#3b82f6', rawUnit: '%', deltaUnit: '%p', dec: 1, topic: '페어웨이 안착률은', subj: '페어웨이 안착률이', up: '올랐',   down: '떨어졌' },
+            gir:       { label: '그린 적중률',     color: '#22d3ee', rawUnit: '%', deltaUnit: '%p', dec: 1, topic: '그린 적중률은',     subj: '그린 적중률이',     up: '올랐',   down: '떨어졌' },
+            putt:      { label: '홀당 퍼팅 수',    color: '#f59e0b', rawUnit: '',  deltaUnit: '',   dec: 2, topic: '홀당 퍼팅 수는',    subj: '홀당 퍼팅 수가',    up: '늘었',   down: '줄었' },
+            gHandicap: { label: 'G핸디',           color: '#10b981', rawUnit: '',  deltaUnit: '',   dec: 1, topic: 'G핸디는',           subj: 'G핸디가',           up: '높아졌', down: '낮아졌' }
+        };
+
+        let multiTrendChart = null;
+        let multiTrendState = { metrics: ['distance', 'fir'], range: '10', showTrend: true };
+
+        function multiTrendLoadState() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(MULTI_TREND_STORAGE_KEY) || 'null');
+                if (!saved) return;
+                const metrics = Array.isArray(saved.metrics) ? saved.metrics.filter(k => MULTI_TREND_META[k]) : [];
+                if (metrics.length) multiTrendState.metrics = metrics;
+                if (['5', '10', 'all'].includes(saved.range)) multiTrendState.range = saved.range;
+                if (typeof saved.showTrend === 'boolean') multiTrendState.showTrend = saved.showTrend;
+            } catch (err) { /* 저장값이 없거나 깨졌으면 기본값을 씁니다 */ }
+        }
+
+        function multiTrendSaveState() {
+            try { localStorage.setItem(MULTI_TREND_STORAGE_KEY, JSON.stringify(multiTrendState)); } catch (err) { /* 저장 불가 환경은 무시 */ }
+        }
+
+        // 선택한 회차(selectedDateIndex)를 마지막으로 하는 구간의 시작/끝 인덱스. 오각형 차트와 같은 기준입니다.
+        function multiTrendRangeIndices() {
+            const end = Math.min(Math.max(selectedDateIndex, 0), DATES.length - 1);
+            const n = multiTrendState.range === 'all' ? end + 1 : Math.min(Number(multiTrendState.range), end + 1);
+            return { start: end - n + 1, end };
+        }
+
+        // 구간 전체의 추세선(회귀선) 기울기로 변화량을 구합니다. 첫 회차와 마지막 회차만 비교하면
+        // 한 번의 컨디션에 휘둘리기 때문입니다. 방향 판정은 점수 환산 값 기준이라 지표마다 좋은 방향이
+        // 달라도(핸디·퍼팅은 낮을수록 우수) 항상 improve = 개선으로 통일됩니다.
+        function multiTrendAnalyze(player, keys, start, end) {
+            const n = end - start + 1;
+            const xs = Array.from({ length: n }, (_, i) => i);
+            const rows = keys.map(key => {
+                const meta = MULTI_TREND_META[key];
+                const raw = GOLF_DATA[player][key].slice(start, end + 1);
+                const scores = raw.map(v => scoreFromScale(key, v));
+                const rawFit = linearRegression(xs, raw);
+                const scoreFit = linearRegression(xs, scores);
+                const rawDelta = rawFit.slope * (n - 1);
+                const scoreDelta = scoreFit.slope * (n - 1);
+                const dir = Math.abs(scoreDelta) < MULTI_TREND_FLAT_EPS ? 'flat' : (scoreDelta > 0 ? 'improve' : 'worsen');
+                return { key, meta, raw, scores, rawFit, scoreFit, rawDelta, scoreDelta, dir, first: raw[0], last: raw[n - 1] };
+            });
+            return { n, rows };
+        }
+
+        // 한쪽은 개선되고 다른 쪽은 악화된 쌍(A=개선, B=악화)에 붙이는 해석 문장.
+        function multiTrendTradeoffTail(A, B) {
+            if (A.key === 'distance' && B.key === 'fir') return ' 거리를 늘리는 과정에서 방향성이 흔들린 패턴으로 보입니다.';
+            if (A.key === 'fir' && B.key === 'distance') return ' 방향성은 잡히는 대신 거리가 줄어든 패턴으로 보입니다.';
+            if (A.key === 'gir' && B.key === 'putt') return ' 그린에는 더 자주 올리지만 퍼팅에서 손해를 보고 있습니다.';
+            if (A.key === 'putt' && B.key === 'gir') return ' 퍼팅은 좋아졌지만 그린 적중이 줄어 타수 절감 효과가 상쇄될 수 있습니다.';
+            if (A.key === 'gHandicap') return ` 종합 스코어(G핸디)는 좋아지고 있어 ${B.meta.label} 하락이 아직 스코어에는 크게 드러나지 않는 모습입니다.`;
+            if (B.key === 'gHandicap') return ' 개별 지표는 좋아졌지만 종합 스코어(G핸디)는 오히려 나빠져 원인을 점검해 볼 만합니다.';
+            return '';
+        }
+
+        function multiTrendBuildInsight(analysis, startDate, endDate) {
+            const { n, rows } = analysis;
+            const period = `${startDate}~${endDate}(${n}회차)`;
+            if (n < 3) return `${period} 구간은 기록이 부족해 추세를 판단하기 어렵습니다. 구간을 넓혀 보세요.`;
+
+            const absText = r => `${Math.abs(r.rawDelta).toFixed(r.meta.dec)}${r.meta.deltaUnit}`;
+            const verb = r => (r.rawDelta > 0 ? r.meta.up : r.meta.down);
+            const labels = list => list.map(r => r.meta.label).join(', ');
+            const improved = rows.filter(r => r.dir === 'improve').sort((a, b) => b.scoreDelta - a.scoreDelta);
+            const worsened = rows.filter(r => r.dir === 'worsen').sort((a, b) => a.scoreDelta - b.scoreDelta);
+            const flat = rows.filter(r => r.dir === 'flat');
+            const flatNote = flat.length && rows.length > 1 ? ` 변화가 거의 없는 지표: ${labels(flat)}.` : '';
+
+            if (rows.length === 1) {
+                const r = rows[0];
+                if (r.dir === 'flat') return `${period} 동안 ${r.meta.topic} 큰 변화 없이 안정적입니다.`;
+                return `${period} 동안 ${r.meta.subj} ${absText(r)} ${verb(r)}습니다 — ${r.dir === 'improve' ? '개선되는' : '하락하는'} 추세입니다.`;
+            }
+            if (!improved.length && !worsened.length) {
+                return `${period} 동안 선택한 ${rows.length}개 지표 모두 큰 변화 없이 안정적입니다.`;
+            }
+            if (improved.length && worsened.length) {
+                // 개선 폭이 큰 순 × 악화 폭이 큰 순으로 짝지어 최대 2쌍까지 엇갈림 문장을 만듭니다.
+                // (4개 지표를 골라도 "비거리↑·페어웨이↓" 같은 두 번째 쌍이 묻히지 않게 하기 위해서입니다.)
+                const pairCount = Math.min(2, improved.length, worsened.length);
+                let text = '';
+                for (let i = 0; i < pairCount; i++) {
+                    const A = improved[i], B = worsened[i];
+                    const lead = i === 0 ? `${period} 동안 ` : ' 또한 ';
+                    text += `${lead}${A.meta.subj} ${absText(A)} ${verb(A)}지만 같은 기간 ${B.meta.topic} ${absText(B)} ${verb(B)}습니다.`;
+                    text += multiTrendTradeoffTail(A, B);
+                }
+                const moreImproved = improved.slice(pairCount), moreWorsened = worsened.slice(pairCount);
+                if (moreImproved.length) text += ` ${labels(moreImproved)}도 함께 개선되고 있습니다.`;
+                if (moreWorsened.length) text += ` ${labels(moreWorsened)}도 함께 하락하고 있습니다.`;
+                return text + flatNote;
+            }
+            const group = improved.length ? improved : worsened;
+            const good = improved.length > 0;
+            const lead = group[0];
+            if (group.length === 1) {
+                // 한 지표만 움직였다면 "개선되는 흐름 / 특히 …"처럼 같은 말을 반복하지 않고 한 문장으로 씁니다.
+                return `${period} 동안 ${lead.meta.subj} ${absText(lead)} ${verb(lead)}습니다 — ${good ? '개선되는' : '하락하는'} 흐름입니다.${flatNote}`;
+            }
+            const head = flat.length === 0
+                ? `선택한 ${rows.length}개 지표가 모두 ${good ? '개선되는' : '하락하는'} 흐름입니다.`
+                : `${labels(group)} 지표가 ${good ? '개선되는' : '하락하는'} 흐름입니다.`;
+            return `${period} 동안 ${head} 특히 ${lead.meta.subj} ${absText(lead)} ${verb(lead)}습니다.${flatNote}`;
+        }
+
+        function renderMultiTrendChips() {
+            const el = document.getElementById('multiTrendChips');
+            if (!el) return;
+            el.innerHTML = MULTI_TREND_ORDER.map(key => {
+                const meta = MULTI_TREND_META[key];
+                const on = multiTrendState.metrics.includes(key);
+                return on
+                    ? `<button type="button" data-multi-metric="${key}" class="px-3 py-1.5 rounded-lg text-xs font-bold transition border" style="background:${meta.color};border-color:${meta.color};color:#020617">${meta.label}</button>`
+                    : `<button type="button" data-multi-metric="${key}" class="px-3 py-1.5 rounded-lg text-xs font-bold transition border border-slate-700/60 bg-slate-800 text-slate-400 hover:text-white"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${meta.color};margin-right:6px"></span>${meta.label}</button>`;
+            }).join('');
+        }
+
+        function renderMultiTrend() {
+            if (activeMode !== 'trend') return;
+            const canvas = document.getElementById('multiTrendChart');
+            if (!canvas || !DATES.length) return;
+
+            const keys = MULTI_TREND_ORDER.filter(k => multiTrendState.metrics.includes(k));
+            const { start, end } = multiTrendRangeIndices();
+            const analysis = multiTrendAnalyze(selectedPlayer, keys, start, end);
+            const dates = DATES.slice(start, end + 1);
+
+            document.getElementById('multiTrendPlayerTitle').textContent = selectedPlayer;
+            document.getElementById('multiTrendDesc').textContent =
+                '선택한 지표를 5점 척도 점수로 환산해 겹쳐 보여줍니다 (모든 지표가 위쪽일수록 우수). 선의 높이보다 기울어지는 방향을 비교해 보세요. 마우스를 올리면 실제 값이 나옵니다.';
+            renderMultiTrendChips();
+            document.getElementById('multiTrendRangeSelect').value = multiTrendState.range;
+            document.getElementById('multiTrendLineBtn').textContent = multiTrendState.showTrend ? '추세선 켜짐' : '추세선 꺼짐';
+
+            // 요약 표
+            const badge = dir => dir === 'improve'
+                ? '<span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold whitespace-nowrap">▲ 개선</span>'
+                : dir === 'worsen'
+                    ? '<span class="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold whitespace-nowrap">▼ 악화</span>'
+                    : '<span class="px-2.5 py-1 rounded-full bg-slate-700/50 text-slate-300 text-xs font-bold whitespace-nowrap">― 변화 없음</span>';
+            document.getElementById('multiTrendSummaryBody').innerHTML = analysis.rows.map(r => {
+                const sign = v => (v > 0 ? '+' : '');
+                const dc = r.dir === 'improve' ? 'text-emerald-300' : (r.dir === 'worsen' ? 'text-amber-300' : 'text-slate-300');
+                return `
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="p-2.5 sm:p-3 font-bold text-white whitespace-nowrap"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${r.meta.color};margin-right:8px"></span>${r.meta.label}</td>
+                        <td class="p-2.5 sm:p-3 text-right ${dc} whitespace-nowrap">${sign(r.rawDelta)}${r.rawDelta.toFixed(r.meta.dec)}${r.meta.deltaUnit} <span class="text-[10px] text-slate-500">(점수 ${sign(r.scoreDelta)}${r.scoreDelta.toFixed(2)})</span></td>
+                        <td class="p-2.5 sm:p-3 text-right text-slate-300 whitespace-nowrap">${r.first.toFixed(r.meta.dec)} → ${r.last.toFixed(r.meta.dec)}${r.meta.rawUnit}</td>
+                        <td class="p-2.5 sm:p-3 text-right whitespace-nowrap">${badge(r.dir)}</td>
+                    </tr>`;
+            }).join('');
+            document.getElementById('multiTrendInsight').textContent = multiTrendBuildInsight(analysis, DATES[start], DATES[end]);
+
+            // 그래프
+            if (!isChartJsLoaded()) { showChartFallback('multiTrendChart'); return; }
+            const theme = chartColors();
+            const datasets = [];
+            analysis.rows.forEach(r => {
+                datasets.push({
+                    label: r.meta.label, _key: r.key, _raw: r.raw,
+                    data: r.scores, borderColor: r.meta.color, backgroundColor: r.meta.color,
+                    borderWidth: 2.5, tension: 0.3, fill: false, pointRadius: 3, pointHoverRadius: 5
+                });
+                if (multiTrendState.showTrend && analysis.n >= 3) {
+                    datasets.push({
+                        label: `${r.meta.label} 추세`, _isTrend: true,
+                        data: r.scores.map((_, i) => r.scoreFit.intercept + r.scoreFit.slope * i),
+                        borderColor: hexToRgba(r.meta.color, 0.7), backgroundColor: 'transparent',
+                        borderWidth: 1.5, borderDash: [6, 4], pointRadius: 0, pointHoverRadius: 0, fill: false
+                    });
+                }
+            });
+
+            if (multiTrendChart) multiTrendChart.destroy();
+            multiTrendChart = new Chart(canvas.getContext('2d'), {
+                type: 'line',
+                data: { labels: dates, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: theme.tick, font: { family: 'Noto Sans KR', weight: 'bold' }, boxWidth: 12, usePointStyle: true,
+                                filter: (item, data) => !data.datasets[item.datasetIndex]._isTrend
+                            }
+                        },
+                        tooltip: {
+                            filter: item => !item.dataset._isTrend,
+                            callbacks: {
+                                label: ctx => {
+                                    const meta = MULTI_TREND_META[ctx.dataset._key];
+                                    const rawVal = ctx.dataset._raw[ctx.dataIndex];
+                                    return `${ctx.dataset.label}: ${rawVal.toFixed(meta.dec)}${meta.rawUnit} (${ctx.parsed.y.toFixed(1)}점)`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { ticks: { color: theme.tick, font: { size: 10 } }, grid: { color: theme.grid } },
+                        y: {
+                            min: 1, max: 5,
+                            ticks: { color: theme.tick, stepSize: 1 },
+                            grid: { color: theme.grid },
+                            title: { display: true, text: '5점 척도 점수 (높을수록 우수)', color: theme.tick, font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initMultiTrendUI() {
+            multiTrendLoadState();
+            const chips = document.getElementById('multiTrendChips');
+            const range = document.getElementById('multiTrendRangeSelect');
+            const lineBtn = document.getElementById('multiTrendLineBtn');
+            if (!chips || !range || !lineBtn) return;
+            chips.addEventListener('click', e => {
+                const btn = e.target.closest('[data-multi-metric]');
+                if (!btn) return;
+                const key = btn.dataset.multiMetric;
+                const has = multiTrendState.metrics.includes(key);
+                if (has && multiTrendState.metrics.length === 1) return; // 최소 1개는 유지
+                multiTrendState.metrics = has ? multiTrendState.metrics.filter(k => k !== key) : multiTrendState.metrics.concat(key);
+                multiTrendSaveState();
+                renderMultiTrend();
+            });
+            range.addEventListener('change', () => { multiTrendState.range = range.value; multiTrendSaveState(); renderMultiTrend(); });
+            lineBtn.addEventListener('click', () => { multiTrendState.showTrend = !multiTrendState.showTrend; multiTrendSaveState(); renderMultiTrend(); });
         }
 
         // ===== 골프 지표간 상관관계 분석 =====
