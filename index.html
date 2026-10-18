@@ -3549,8 +3549,10 @@
         // 겹쳐 그립니다. 그러면 "비거리 선은 오르는데 페어웨이 선은 내려간다"가 그대로 읽힙니다.
         const MULTI_TREND_STORAGE_KEY = 'jangan_golf_multi_trend_v1';
         const MULTI_TREND_ORDER = ['distance', 'fir', 'gir', 'putt', 'gHandicap'];
-        // 추세 변화(점수)가 이 값 미만이면 "변화 없음"으로 봅니다(5점 만점 기준 약 비거리 4m / 비율 4%p).
-        const MULTI_TREND_FLAT_EPS = 0.2;
+        // 추세 변화(점수)가 이 값 미만이면 "변화 없음"으로 봅니다. 0.1점은 대략 비거리 2m / 비율 지표 2%p /
+        // 홀당 퍼팅 수 0.02 / G핸디 0.3에 해당합니다. (처음엔 0.2였는데, 최근 10회 기준 25칸 중 7칸이
+        // "변화 없음"으로 묻혀 너무 둔감해 0.1로 낮췄습니다. 더 낮추면 작은 흔들림에도 방향이 붙습니다.)
+        const MULTI_TREND_FLAT_EPS = 0.1;
         // topic/subj: 은·는 / 이·가 조사를 미리 붙인 이름, up/down: raw 값이 늘 때/줄 때의 서술어(어간).
         const MULTI_TREND_META = {
             distance:  { label: '드라이버 비거리', color: '#a855f7', rawUnit: 'm', deltaUnit: 'm',  dec: 1, topic: '드라이버 비거리는', subj: '드라이버 비거리가', up: '늘었',   down: '줄었' },
@@ -3597,9 +3599,12 @@
                 const scores = raw.map(v => scoreFromScale(key, v));
                 const rawFit = linearRegression(xs, raw);
                 const scoreFit = linearRegression(xs, scores);
-                const rawDelta = rawFit.slope * (n - 1);
-                const scoreDelta = scoreFit.slope * (n - 1);
-                const dir = Math.abs(scoreDelta) < MULTI_TREND_FLAT_EPS ? 'flat' : (scoreDelta > 0 ? 'improve' : 'worsen');
+                // 3회 미만이면 추세를 판단하지 않습니다(1회는 기울기가 NaN이 되고, 2회는 두 점을 잇는 선일 뿐이라
+                // 우연한 차이를 개선/악화로 오판하기 쉽습니다). 이때 변화량은 null, 판정은 'few'(기록 부족)입니다.
+                const enough = n >= 3;
+                const rawDelta = enough ? rawFit.slope * (n - 1) : null;
+                const scoreDelta = enough ? scoreFit.slope * (n - 1) : null;
+                const dir = !enough ? 'few' : (Math.abs(scoreDelta) < MULTI_TREND_FLAT_EPS ? 'flat' : (scoreDelta > 0 ? 'improve' : 'worsen'));
                 return { key, meta, raw, scores, rawFit, scoreFit, rawDelta, scoreDelta, dir, first: raw[0], last: raw[n - 1] };
             });
             return { n, rows };
@@ -3700,14 +3705,19 @@
                 ? '<span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold whitespace-nowrap">▲ 개선</span>'
                 : dir === 'worsen'
                     ? '<span class="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold whitespace-nowrap">▼ 악화</span>'
-                    : '<span class="px-2.5 py-1 rounded-full bg-slate-700/50 text-slate-300 text-xs font-bold whitespace-nowrap">― 변화 없음</span>';
+                    : dir === 'few'
+                        ? '<span class="px-2.5 py-1 rounded-full bg-slate-700/50 text-slate-400 text-xs font-bold whitespace-nowrap">기록 부족</span>'
+                        : '<span class="px-2.5 py-1 rounded-full bg-slate-700/50 text-slate-300 text-xs font-bold whitespace-nowrap">― 변화 없음</span>';
             document.getElementById('multiTrendSummaryBody').innerHTML = analysis.rows.map(r => {
                 const sign = v => (v > 0 ? '+' : '');
                 const dc = r.dir === 'improve' ? 'text-emerald-300' : (r.dir === 'worsen' ? 'text-amber-300' : 'text-slate-300');
+                const changeCell = r.rawDelta == null
+                    ? '<span class="text-slate-500">-</span>'
+                    : `${sign(r.rawDelta)}${r.rawDelta.toFixed(r.meta.dec)}${r.meta.deltaUnit} <span class="text-[10px] text-slate-500">(점수 ${sign(r.scoreDelta)}${r.scoreDelta.toFixed(2)})</span>`;
                 return `
                     <tr class="hover:bg-slate-800/40 transition">
                         <td class="p-2.5 sm:p-3 font-bold text-white whitespace-nowrap"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${r.meta.color};margin-right:8px"></span>${r.meta.label}</td>
-                        <td class="p-2.5 sm:p-3 text-right ${dc} whitespace-nowrap">${sign(r.rawDelta)}${r.rawDelta.toFixed(r.meta.dec)}${r.meta.deltaUnit} <span class="text-[10px] text-slate-500">(점수 ${sign(r.scoreDelta)}${r.scoreDelta.toFixed(2)})</span></td>
+                        <td class="p-2.5 sm:p-3 text-right ${dc} whitespace-nowrap">${changeCell}</td>
                         <td class="p-2.5 sm:p-3 text-right text-slate-300 whitespace-nowrap">${r.first.toFixed(r.meta.dec)} → ${r.last.toFixed(r.meta.dec)}${r.meta.rawUnit}</td>
                         <td class="p-2.5 sm:p-3 text-right whitespace-nowrap">${badge(r.dir)}</td>
                     </tr>`;
