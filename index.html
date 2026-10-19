@@ -3549,8 +3549,10 @@
         // 겹쳐 그립니다. 그러면 "비거리 선은 오르는데 페어웨이 선은 내려간다"가 그대로 읽힙니다.
         const MULTI_TREND_STORAGE_KEY = 'jangan_golf_multi_trend_v1';
         const MULTI_TREND_ORDER = ['distance', 'fir', 'gir', 'putt', 'gHandicap'];
-        // 추세 변화(점수)가 이 값 미만이면 "변화 없음"으로 봅니다(5점 만점 기준 약 비거리 4m / 비율 4%p).
-        const MULTI_TREND_FLAT_EPS = 0.2;
+        // 추세 변화(점수)가 이 값 미만이면 "변화 없음"으로 봅니다. 0.15점은 대략 비거리 3m / 비율 지표 3%p /
+        // 홀당 퍼팅 수 0.03에 해당합니다. (처음엔 0.2였는데 최근 10회 기준 25칸 중 7칸이 "변화 없음"으로
+        // 묻혀 조금 둔감해 0.15로 낮췄습니다. 더 낮추면 작은 흔들림에도 방향이 붙습니다.)
+        const MULTI_TREND_FLAT_EPS = 0.15;
         // topic/subj: 은·는 / 이·가 조사를 미리 붙인 이름, up/down: raw 값이 늘 때/줄 때의 서술어(어간).
         const MULTI_TREND_META = {
             distance:  { label: '드라이버 비거리', color: '#a855f7', rawUnit: 'm', deltaUnit: 'm',  dec: 1, topic: '드라이버 비거리는', subj: '드라이버 비거리가', up: '늘었',   down: '줄었' },
