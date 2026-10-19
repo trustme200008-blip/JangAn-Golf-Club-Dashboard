@@ -733,7 +733,7 @@
                             <tr class="border-b border-slate-700 text-[11px] text-slate-500 bg-slate-900/60">
                                 <th class="p-2.5 sm:p-3 whitespace-nowrap">지표</th>
                                 <th class="p-2.5 sm:p-3 text-right whitespace-nowrap">추세 변화</th>
-                                <th class="p-2.5 sm:p-3 text-right whitespace-nowrap">첫 → 마지막 회차</th>
+                                <th class="p-2.5 sm:p-3 text-right whitespace-nowrap" title="구간을 앞뒤 절반으로 나눈 평균 비교 (회차 수가 홀수면 가운데 회차는 제외)">앞 절반 → 뒤 절반 평균</th>
                                 <th class="p-2.5 sm:p-3 text-right whitespace-nowrap">판정</th>
                             </tr>
                         </thead>
@@ -3553,6 +3553,9 @@
         // 홀당 퍼팅 수 0.02 / G핸디 0.3에 해당합니다. (처음엔 0.2였는데, 최근 10회 기준 25칸 중 7칸이
         // "변화 없음"으로 묻혀 너무 둔감해 0.1로 낮췄습니다. 더 낮추면 작은 흔들림에도 방향이 붙습니다.)
         const MULTI_TREND_FLAT_EPS = 0.1;
+        // 마지막 회차가 직전 회차보다 이 값(점수) 이상, 그것도 구간 추세와 반대 방향으로 움직이면
+        // "마지막 회차 반등/주춤"으로 따로 알려줍니다(0.3점은 대략 비거리 6m / 비율 지표 6%p / G핸디 1.0).
+        const MULTI_TREND_REBOUND_EPS = 0.3;
         // topic/subj: 은·는 / 이·가 조사를 미리 붙인 이름, up/down: raw 값이 늘 때/줄 때의 서술어(어간).
         const MULTI_TREND_META = {
             distance:  { label: '드라이버 비거리', color: '#a855f7', rawUnit: 'm', deltaUnit: 'm',  dec: 1, topic: '드라이버 비거리는', subj: '드라이버 비거리가', up: '늘었',   down: '줄었' },
@@ -3605,7 +3608,24 @@
                 const rawDelta = enough ? rawFit.slope * (n - 1) : null;
                 const scoreDelta = enough ? scoreFit.slope * (n - 1) : null;
                 const dir = !enough ? 'few' : (Math.abs(scoreDelta) < MULTI_TREND_FLAT_EPS ? 'flat' : (scoreDelta > 0 ? 'improve' : 'worsen'));
-                return { key, meta, raw, scores, rawFit, scoreFit, rawDelta, scoreDelta, dir, first: raw[0], last: raw[n - 1] };
+
+                // 표에 보여줄 "앞 절반 평균 → 뒤 절반 평균". 첫·마지막 회차 두 점만 비교하면 한 번의 라운드에
+                // 휘둘려 추세 판정과 엇갈려 보이므로, 판정과 같은 방향의 값이 나오는 절반 평균을 씁니다.
+                // 회차가 홀수면 가운데 회차는 어느 쪽에도 넣지 않습니다.
+                const half = Math.floor(n / 2);
+                const avg = arr => arr.reduce((x, y) => x + y, 0) / arr.length;
+                const frontAvg = enough ? avg(raw.slice(0, half)) : null;
+                const backAvg = enough ? avg(raw.slice(n - half)) : null;
+
+                // 마지막 회차가 직전 회차 대비 추세와 "반대 방향으로 크게" 움직였는지(추세 vs 최근 반등 충돌).
+                let rebound = null;
+                if (enough && (dir === 'improve' || dir === 'worsen')) {
+                    const step = scores[n - 1] - scores[n - 2];
+                    if (Math.abs(step) >= MULTI_TREND_REBOUND_EPS && (step > 0) !== (scoreDelta > 0)) {
+                        rebound = { prev: raw[n - 2], last: raw[n - 1], good: step > 0 };
+                    }
+                }
+                return { key, meta, raw, scores, rawFit, scoreFit, rawDelta, scoreDelta, dir, frontAvg, backAvg, rebound, first: raw[0], last: raw[n - 1] };
             });
             return { n, rows };
         }
@@ -3621,6 +3641,18 @@
             return '';
         }
 
+        // 추세 판정과 반대로 마지막 회차만 크게 움직인 지표를 문장 끝에 덧붙입니다. 구간 추세는 "악화"인데
+        // 마지막 한 번이 크게 좋아진 경우(또는 그 반대)에 추세만 읽고 최근 변화를 놓치지 않게 하기 위해서입니다.
+        function multiTrendReboundNote(analysis, endDate) {
+            if (analysis.n < 3) return '';
+            const fmt = (r, v) => `${v.toFixed(r.meta.dec)}${r.meta.rawUnit}`;
+            const notes = analysis.rows.filter(r => r.rebound).slice(0, 2).map(r =>
+                r.rebound.good
+                    ? ` 다만 마지막 회차(${endDate})에는 ${r.meta.subj} ${fmt(r, r.rebound.prev)}에서 ${fmt(r, r.rebound.last)}로 크게 좋아져 반등했습니다.`
+                    : ` 다만 마지막 회차(${endDate})에는 ${r.meta.subj} ${fmt(r, r.rebound.prev)}에서 ${fmt(r, r.rebound.last)}로 크게 나빠져 개선 흐름이 주춤했습니다.`);
+            return notes.join('');
+        }
+
         function multiTrendBuildInsight(analysis, startDate, endDate) {
             const { n, rows } = analysis;
             const period = `${startDate}~${endDate}(${n}회차)`;
@@ -3632,12 +3664,14 @@
             const improved = rows.filter(r => r.dir === 'improve').sort((a, b) => b.scoreDelta - a.scoreDelta);
             const worsened = rows.filter(r => r.dir === 'worsen').sort((a, b) => a.scoreDelta - b.scoreDelta);
             const flat = rows.filter(r => r.dir === 'flat');
-            const flatNote = flat.length && rows.length > 1 ? ` 변화가 거의 없는 지표: ${labels(flat)}.` : '';
+            // 문장 끝에 붙는 부가 안내: 마지막 회차 반등/주춤 → 변화 없는 지표 순서.
+            const flatNote = (flat.length && rows.length > 1 ? ` 변화가 거의 없는 지표: ${labels(flat)}.` : '');
+            const tailNote = multiTrendReboundNote(analysis, endDate) + flatNote;
 
             if (rows.length === 1) {
                 const r = rows[0];
                 if (r.dir === 'flat') return `${period} 동안 ${r.meta.topic} 큰 변화 없이 안정적입니다.`;
-                return `${period} 동안 ${r.meta.subj} ${absText(r)} ${verb(r)}습니다 — ${r.dir === 'improve' ? '개선되는' : '하락하는'} 추세입니다.`;
+                return `${period} 동안 ${r.meta.subj} ${absText(r)} ${verb(r)}습니다 — ${r.dir === 'improve' ? '개선되는' : '하락하는'} 추세입니다.${tailNote}`;
             }
             if (!improved.length && !worsened.length) {
                 return `${period} 동안 선택한 ${rows.length}개 지표 모두 큰 변화 없이 안정적입니다.`;
@@ -3656,19 +3690,19 @@
                 const moreImproved = improved.slice(pairCount), moreWorsened = worsened.slice(pairCount);
                 if (moreImproved.length) text += ` ${labels(moreImproved)}도 함께 개선되고 있습니다.`;
                 if (moreWorsened.length) text += ` ${labels(moreWorsened)}도 함께 하락하고 있습니다.`;
-                return text + flatNote;
+                return text + tailNote;
             }
             const group = improved.length ? improved : worsened;
             const good = improved.length > 0;
             const lead = group[0];
             if (group.length === 1) {
                 // 한 지표만 움직였다면 "개선되는 흐름 / 특히 …"처럼 같은 말을 반복하지 않고 한 문장으로 씁니다.
-                return `${period} 동안 ${lead.meta.subj} ${absText(lead)} ${verb(lead)}습니다 — ${good ? '개선되는' : '하락하는'} 흐름입니다.${flatNote}`;
+                return `${period} 동안 ${lead.meta.subj} ${absText(lead)} ${verb(lead)}습니다 — ${good ? '개선되는' : '하락하는'} 흐름입니다.${tailNote}`;
             }
             const head = flat.length === 0
                 ? `선택한 ${rows.length}개 지표가 모두 ${good ? '개선되는' : '하락하는'} 흐름입니다.`
                 : `${labels(group)} 지표가 ${good ? '개선되는' : '하락하는'} 흐름입니다.`;
-            return `${period} 동안 ${head} 특히 ${lead.meta.subj} ${absText(lead)} ${verb(lead)}습니다.${flatNote}`;
+            return `${period} 동안 ${head} 특히 ${lead.meta.subj} ${absText(lead)} ${verb(lead)}습니다.${tailNote}`;
         }
 
         function renderMultiTrendChips() {
@@ -3708,6 +3742,10 @@
                     : dir === 'few'
                         ? '<span class="px-2.5 py-1 rounded-full bg-slate-700/50 text-slate-400 text-xs font-bold whitespace-nowrap">기록 부족</span>'
                         : '<span class="px-2.5 py-1 rounded-full bg-slate-700/50 text-slate-300 text-xs font-bold whitespace-nowrap">― 변화 없음</span>';
+            // 구간 추세와 반대로 마지막 회차만 크게 움직인 지표에는 배지 아래에 작게 표시합니다.
+            const reboundTag = r => !r.rebound ? '' : (r.rebound.good
+                ? '<div class="mt-1 text-[10px] text-emerald-300">마지막 회차 반등</div>'
+                : '<div class="mt-1 text-[10px] text-amber-300">마지막 회차 주춤</div>');
             document.getElementById('multiTrendSummaryBody').innerHTML = analysis.rows.map(r => {
                 const sign = v => (v > 0 ? '+' : '');
                 const dc = r.dir === 'improve' ? 'text-emerald-300' : (r.dir === 'worsen' ? 'text-amber-300' : 'text-slate-300');
@@ -3718,8 +3756,8 @@
                     <tr class="hover:bg-slate-800/40 transition">
                         <td class="p-2.5 sm:p-3 font-bold text-white whitespace-nowrap"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${r.meta.color};margin-right:8px"></span>${r.meta.label}</td>
                         <td class="p-2.5 sm:p-3 text-right ${dc} whitespace-nowrap">${changeCell}</td>
-                        <td class="p-2.5 sm:p-3 text-right text-slate-300 whitespace-nowrap">${r.first.toFixed(r.meta.dec)} → ${r.last.toFixed(r.meta.dec)}${r.meta.rawUnit}</td>
-                        <td class="p-2.5 sm:p-3 text-right whitespace-nowrap">${badge(r.dir)}</td>
+                        <td class="p-2.5 sm:p-3 text-right text-slate-300 whitespace-nowrap">${r.frontAvg == null ? '<span class="text-slate-500">-</span>' : `${r.frontAvg.toFixed(r.meta.dec)} → ${r.backAvg.toFixed(r.meta.dec)}${r.meta.rawUnit}`}</td>
+                        <td class="p-2.5 sm:p-3 text-right whitespace-nowrap">${badge(r.dir)}${reboundTag(r)}</td>
                     </tr>`;
             }).join('');
             document.getElementById('multiTrendInsight').textContent = multiTrendBuildInsight(analysis, DATES[start], DATES[end]);
