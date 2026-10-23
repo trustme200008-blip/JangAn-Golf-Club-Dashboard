@@ -3676,11 +3676,11 @@
         const MULTI_TREND_FLAT_EPS = 0.15;
         // topic/subj: 은·는 / 이·가 조사를 미리 붙인 이름, up/down: raw 값이 늘 때/줄 때의 서술어(어간).
         const MULTI_TREND_META = {
-            distance:  { label: '드라이버 비거리', color: '#5B5F57', rawUnit: 'm', deltaUnit: 'm',  dec: 1, topic: '드라이버 비거리는', subj: '드라이버 비거리가', up: '늘었',   down: '줄었' },
-            fir:       { label: '페어웨이 안착률', color: '#2F5F8A', rawUnit: '%', deltaUnit: '%p', dec: 1, topic: '페어웨이 안착률은', subj: '페어웨이 안착률이', up: '올랐',   down: '떨어졌' },
-            gir:       { label: '그린 적중률',     color: '#6E9A78', rawUnit: '%', deltaUnit: '%p', dec: 1, topic: '그린 적중률은',     subj: '그린 적중률이',     up: '올랐',   down: '떨어졌' },
-            putt:      { label: '홀당 퍼팅 수',    color: '#B09A58', rawUnit: '',  deltaUnit: '',   dec: 2, topic: '홀당 퍼팅 수는',    subj: '홀당 퍼팅 수가',    up: '늘었',   down: '줄었' },
-            gHandicap: { label: 'G핸디',           color: '#1F4D3A', rawUnit: '',  deltaUnit: '',   dec: 1, topic: 'G핸디는',           subj: 'G핸디가',           up: '높아졌', down: '낮아졌' }
+            distance:  { label: '드라이버 비거리', color: '#2F5F8A', pointStyle: 'circle', rawUnit: 'm', deltaUnit: 'm',  dec: 1, topic: '드라이버 비거리는', subj: '드라이버 비거리가', up: '늘었',   down: '줄었' },
+            fir:       { label: '페어웨이 안착률', color: '#E08A1E', pointStyle: 'rect', rawUnit: '%', deltaUnit: '%p', dec: 1, topic: '페어웨이 안착률은', subj: '페어웨이 안착률이', up: '올랐',   down: '떨어졌' },
+            gir:       { label: '그린 적중률',     color: '#2E9B5E', pointStyle: 'triangle', rawUnit: '%', deltaUnit: '%p', dec: 1, topic: '그린 적중률은',     subj: '그린 적중률이',     up: '올랐',   down: '떨어졌' },
+            putt:      { label: '홀당 퍼팅 수',    color: '#C2307A', pointStyle: 'rectRot', rawUnit: '',  deltaUnit: '',   dec: 2, topic: '홀당 퍼팅 수는',    subj: '홀당 퍼팅 수가',    up: '늘었',   down: '줄었' },
+            gHandicap: { label: 'G핸디',           color: '#6B4FA0', pointStyle: 'star', rawUnit: '',  deltaUnit: '',   dec: 1, topic: 'G핸디는',           subj: 'G핸디가',           up: '높아졌', down: '낮아졌' }
         };
 
         let multiTrendChart = null;
@@ -3796,7 +3796,7 @@
                 const meta = MULTI_TREND_META[key];
                 const on = multiTrendState.metrics.includes(key);
                 return on
-                    ? `<button type="button" data-multi-metric="${key}" class="px-3 py-1.5 rounded-lg text-xs font-bold transition border" style="background:${meta.color};border-color:${meta.color};color:#020617">${meta.label}</button>`
+                    ? `<button type="button" data-multi-metric="${key}" class="px-3 py-1.5 rounded-lg text-xs font-bold transition border" style="background:${meta.color};border-color:${meta.color};color:#fff">${meta.label}</button>`
                     : `<button type="button" data-multi-metric="${key}" class="px-3 py-1.5 rounded-lg text-xs font-bold transition border border-slate-700/60 bg-slate-800 text-slate-400 hover:text-white"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${meta.color};margin-right:6px"></span>${meta.label}</button>`;
             }).join('');
         }
@@ -3845,7 +3845,7 @@
                 datasets.push({
                     label: r.meta.label, _key: r.key, _raw: r.raw,
                     data: r.scores, borderColor: r.meta.color, backgroundColor: r.meta.color,
-                    borderWidth: 2.5, tension: 0.3, fill: false, pointRadius: 3, pointHoverRadius: 5
+                    borderWidth: 2.5, tension: 0.3, fill: false, pointRadius: 5, pointHoverRadius: 7, pointStyle: r.meta.pointStyle
                 });
                 if (multiTrendState.showTrend && analysis.n >= 3) {
                     datasets.push({
