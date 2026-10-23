@@ -138,6 +138,24 @@
         html:not(.light) .jags-low  { background: rgba(216, 201, 160, 0.16); color: #D8C9A0; }
         .jags-good-text { color: var(--pin-ink); } .jags-mid-text { color: var(--fairway); } .jags-low-text { color: var(--sand-ink); }
         html:not(.light) .jags-good-text { color: #F06A5F; } html:not(.light) .jags-mid-text { color: #8FBF9F; } html:not(.light) .jags-low-text { color: #D8C9A0; }
+        /* ===== 게임 탭 스코어보드: 클럽하우스에 거는 숫자판 (이 디자인에서 가장 대담한 한 곳) ===== */
+        .jags-board { background: #173B2C; border-radius: 4px; padding: 2px 14px; }
+        .jags-board-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 8px; margin: 0 -8px;
+            border-bottom: 1px solid rgba(242, 244, 236, 0.14); }
+        .jags-board-row:last-child { border-bottom: 0; }
+        .jags-board-row.is-me { background: rgba(242, 244, 236, 0.08); box-shadow: inset 3px 0 0 #F06A5F; }
+        .jags-board-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .jags-tile { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; background: #F2F4EC; color: #173B2C;
+            border-radius: 2px; font-family: 'Barlow Condensed', 'IBM Plex Sans KR', sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+        .jags-rank { width: 34px; height: 40px; font-size: 1.6rem; }
+        .jags-rank.first { background: #D8C9A0; }
+        .jags-board-name { color: #F2F4EC; font-weight: 600; font-size: 1rem; line-height: 1.3; }
+        .jags-board-name .jags-dot { margin-right: 8px; }
+        .jags-board-sub { color: rgba(242, 244, 236, 0.66); font-size: 0.72rem; margin-top: 2px; }
+        .jags-me-tag { display: inline-block; margin-left: 8px; padding: 1px 6px; border-radius: 2px; background: #F06A5F; color: #173B2C; font-size: 0.65rem; font-weight: 700; vertical-align: middle; }
+        .jags-score { min-width: 76px; height: 40px; padding: 0 10px; font-size: 1.7rem; flex-shrink: 0; }
+        .jags-score small { font-family: 'IBM Plex Sans KR', sans-serif; font-size: 0.7rem; font-weight: 600; margin-left: 2px; }
+        .jags-score.scratch { background: #D2362C; color: #fff; font-family: 'IBM Plex Sans KR', sans-serif; font-size: 0.85rem; font-weight: 700; }
         .jags-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
 
         /* ---------- 주간(기본) ---------- */
@@ -2034,23 +2052,23 @@
                 ? {
                     tick: '#475569',
                     grid: 'rgba(15, 23, 42, 0.08)',
-                    accent: '#059669',
-                    accentFill: 'rgba(5, 150, 105, 0.12)',
-                    accentPoint: '#059669',
-                    barActive: 'rgba(5, 150, 105, 0.8)',
+                    accent: '#1F4D3A',
+                    accentFill: 'rgba(31, 77, 58, 0.12)',
+                    accentPoint: '#1F4D3A',
+                    barActive: 'rgba(31, 77, 58, 0.85)',
                     barInactive: 'rgba(148, 163, 184, 0.5)',
-                    barActiveBorder: '#059669',
+                    barActiveBorder: '#1F4D3A',
                     barInactiveBorder: '#94a3b8'
                 }
                 : {
                     tick: '#cbd5e1',
                     grid: 'rgba(255, 255, 255, 0.05)',
-                    accent: '#10b981',
-                    accentFill: 'rgba(16, 185, 129, 0.1)',
-                    accentPoint: '#34d399',
-                    barActive: 'rgba(16, 185, 129, 0.8)',
+                    accent: '#8FBF9F',
+                    accentFill: 'rgba(143, 191, 159, 0.12)',
+                    accentPoint: '#8FBF9F',
+                    barActive: 'rgba(143, 191, 159, 0.8)',
                     barInactive: 'rgba(51, 65, 85, 0.6)',
-                    barActiveBorder: '#10b981',
+                    barActiveBorder: '#8FBF9F',
                     barInactiveBorder: '#475569'
                 };
         }
@@ -3098,7 +3116,7 @@
         }
 
         // 오래된 회차 -> 최근 회차 순서의 트레일 색상 (에메랄드 계열, 최근일수록 진하게)
-        const RADAR_TRAIL_COLORS = ['#a7f3d0', '#6ee7b7', '#34d399', '#10b981', '#059669'];
+        const RADAR_TRAIL_COLORS = ['#CFE0D3', '#A5C4AE', '#6E9A78', '#3F7050', '#1F4D3A'];
 
         // 개인 5점 척도 종합 비교 (오각형, 선택된 플레이어의 최근 5회차 라운드)
         function renderSingleRadarChart() {
@@ -3406,7 +3424,7 @@
         // 채우기로 겹쳐 보여줍니다.
         let radar2pPlayerA = null;
         let radar2pPlayerB = null;
-        const RADAR_2P_COLORS = ['#10b981', '#f59e0b']; // 선수 A(에메랄드) / 선수 B(앰버) — 겹침 영역도 서로 구분되도록 보색 계열 사용
+        const RADAR_2P_COLORS = ['#1F4D3A', '#C0932B']; // 선수 A(에메랄드) / 선수 B(앰버) — 겹침 영역도 서로 구분되도록 보색 계열 사용
 
         function radar2pDefaultPlayers() {
             if (!radar2pPlayerA || !PLAYERS.includes(radar2pPlayerA)) radar2pPlayerA = selectedPlayer;
@@ -3549,13 +3567,13 @@
 
         // 플레이어별 라인 색상 팔레트 (5인 동반자 구분용)
         const PLAYER_LINE_COLORS = {
-            '민': '#10b981', // emerald
-            '혁': '#3b82f6', // blue
-            '규': '#f59e0b', // amber
-            '호': '#a855f7', // purple
-            '훈': '#f43f5e'  // rose
+            '민': '#2E8B5E', // 페어웨이 계열 녹색
+            '혁': '#2F5F8A', // 티 마커 파랑
+            '규': '#C0932B', // 벙커 샌드(진하게)
+            '호': '#7A4E8C', // 자주
+            '훈': '#B0563A'  // 클레이
         };
-        const DEFAULT_LINE_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#a855f7', '#f43f5e', '#14b8a6', '#6366f1'];
+        const DEFAULT_LINE_COLORS = ['#2E8B5E', '#2F5F8A', '#C0932B', '#7A4E8C', '#B0563A', '#3F9E9A', '#5B5F57'];
 
         function playerLineColor(player, index) {
             return PLAYER_LINE_COLORS[player] || DEFAULT_LINE_COLORS[index % DEFAULT_LINE_COLORS.length];
@@ -3658,11 +3676,11 @@
         const MULTI_TREND_FLAT_EPS = 0.15;
         // topic/subj: 은·는 / 이·가 조사를 미리 붙인 이름, up/down: raw 값이 늘 때/줄 때의 서술어(어간).
         const MULTI_TREND_META = {
-            distance:  { label: '드라이버 비거리', color: '#a855f7', rawUnit: 'm', deltaUnit: 'm',  dec: 1, topic: '드라이버 비거리는', subj: '드라이버 비거리가', up: '늘었',   down: '줄었' },
-            fir:       { label: '페어웨이 안착률', color: '#3b82f6', rawUnit: '%', deltaUnit: '%p', dec: 1, topic: '페어웨이 안착률은', subj: '페어웨이 안착률이', up: '올랐',   down: '떨어졌' },
-            gir:       { label: '그린 적중률',     color: '#22d3ee', rawUnit: '%', deltaUnit: '%p', dec: 1, topic: '그린 적중률은',     subj: '그린 적중률이',     up: '올랐',   down: '떨어졌' },
-            putt:      { label: '홀당 퍼팅 수',    color: '#f59e0b', rawUnit: '',  deltaUnit: '',   dec: 2, topic: '홀당 퍼팅 수는',    subj: '홀당 퍼팅 수가',    up: '늘었',   down: '줄었' },
-            gHandicap: { label: 'G핸디',           color: '#10b981', rawUnit: '',  deltaUnit: '',   dec: 1, topic: 'G핸디는',           subj: 'G핸디가',           up: '높아졌', down: '낮아졌' }
+            distance:  { label: '드라이버 비거리', color: '#5B5F57', rawUnit: 'm', deltaUnit: 'm',  dec: 1, topic: '드라이버 비거리는', subj: '드라이버 비거리가', up: '늘었',   down: '줄었' },
+            fir:       { label: '페어웨이 안착률', color: '#2F5F8A', rawUnit: '%', deltaUnit: '%p', dec: 1, topic: '페어웨이 안착률은', subj: '페어웨이 안착률이', up: '올랐',   down: '떨어졌' },
+            gir:       { label: '그린 적중률',     color: '#6E9A78', rawUnit: '%', deltaUnit: '%p', dec: 1, topic: '그린 적중률은',     subj: '그린 적중률이',     up: '올랐',   down: '떨어졌' },
+            putt:      { label: '홀당 퍼팅 수',    color: '#B09A58', rawUnit: '',  deltaUnit: '',   dec: 2, topic: '홀당 퍼팅 수는',    subj: '홀당 퍼팅 수가',    up: '늘었',   down: '줄었' },
+            gHandicap: { label: 'G핸디',           color: '#1F4D3A', rawUnit: '',  deltaUnit: '',   dec: 1, topic: 'G핸디는',           subj: 'G핸디가',           up: '높아졌', down: '낮아졌' }
         };
 
         let multiTrendChart = null;
@@ -4088,6 +4106,25 @@
         // 소수점 차이를 먼저 내고 반올림하면 4.1과 4.2처럼 사실상 같은 실력이 0타/1타로 갈리고,
         // 6.2와 6.8처럼 0.6이나 벌어진 사이가 같은 타수로 묶이는 일이 생겨서 이렇게 바꿨습니다.
         // 예) 민 3.7→4, 호 4.1→4, 혁 4.2→4, 훈 6.2→6, 규 6.8→7 ⇒ 앞 셋은 스크래치, 훈 +2타, 규 +3타.
+        // 게임 탭 공용 스코어보드 한 줄. 스크린골프·코스라운드 스크래치 게임이 함께 씁니다.
+        // 스코어보드 관례대로 "스크래치(언더파)" 칸만 빨간 타일, 나머지는 +타수를 흰 숫자 타일로 보여줍니다.
+        function jagsBoardRow(o) {
+            const score = o.isScratch
+                ? '<span class="jags-tile jags-score scratch">스크래치</span>'
+                : `<span class="jags-tile jags-score">+${o.diff}<small>타</small></span>`;
+            return `
+                <div class="jags-board-row${o.isSelected ? ' is-me' : ''}">
+                    <div class="jags-board-left">
+                        <span class="jags-tile jags-rank${o.rank === 1 ? ' first' : ''}">${o.rank}</span>
+                        <div class="min-w-0">
+                            <div class="jags-board-name"><span class="jags-dot" style="background:${o.color}"></span>${o.player}${o.nameExtra || ''}${o.isSelected ? '<span class="jags-me-tag">나</span>' : ''}</div>
+                            <div class="jags-board-sub">${o.sub}</div>
+                        </div>
+                    </div>
+                    ${score}
+                </div>`;
+        }
+
         function getScratchStandings() {
             if (DATES.length === 0) return [];
             const latestIdx = scratchBaseIdx();
@@ -4118,37 +4155,11 @@
 
             const listContainer = document.getElementById('scratchListContainer');
             if (listContainer) {
-                listContainer.innerHTML = standings.map((s, i) => {
-                    const isScratch = s.diff === 0;
-                    const isSelected = s.player === selectedPlayer;
-                    const rankBadgeClass = i === 0
-                        ? 'bg-amber-400 text-slate-950'
-                        : 'bg-slate-700 text-slate-200';
-                    const diffBadge = isScratch
-                        ? `<span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold whitespace-nowrap">스크래치</span>`
-                        : `<span class="px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold whitespace-nowrap">+${s.diff}타</span>`;
-                    const rowClass = isSelected
-                        ? 'flex items-center justify-between gap-3 bg-emerald-950/30 border-2 border-emerald-500/60 rounded-xl px-3.5 sm:px-4 py-3'
-                        : 'flex items-center justify-between gap-3 bg-slate-800/40 border border-slate-700/50 rounded-xl px-3.5 sm:px-4 py-3';
-                    const selectedTag = isSelected
-                        ? `<span class="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-emerald-500 text-slate-950 font-bold align-middle">나</span>`
-                        : '';
-                    return `
-                        <div class="${rowClass}">
-                            <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                                <span class="w-6 h-6 sm:w-7 sm:h-7 rounded-full ${rankBadgeClass} flex items-center justify-center font-bold text-[11px] sm:text-xs shrink-0">${i + 1}</span>
-                                <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center font-bold text-xs sm:text-sm shrink-0">${s.player}</span>
-                                <div class="min-w-0">
-                                    <p class="text-xs sm:text-sm font-bold text-white truncate">${s.player} 플레이어${selectedTag}</p>
-                                    <p class="text-[10px] sm:text-[11px] text-slate-400">G핸디 ${s.gHandicap.toFixed(1)} → 반올림 ${s.ghRounded}</p>
-                                </div>
-                            </div>
-                            <div class="text-right shrink-0">
-                                ${diffBadge}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
+                listContainer.innerHTML = '<div class="jags-board">' + standings.map((s, i) => jagsBoardRow({
+                    rank: i + 1, color: s.color, player: s.player + ' 플레이어', isScratch: s.diff === 0, diff: s.diff,
+                    isSelected: s.player === selectedPlayer,
+                    sub: `G핸디 ${s.gHandicap.toFixed(1)} → 반올림 ${s.ghRounded}`
+                })).join('') + '</div>';
             }
 
             // 선택한 플레이어 기준, 나머지 4명과의 핸디 차이
@@ -5647,8 +5658,8 @@
                         {
                             label: '목표 타수',
                             data: rows.map(r => r.target),
-                            backgroundColor: hexToRgba('#f59e0b', 0.7),
-                            borderColor: '#f59e0b',
+                            backgroundColor: hexToRgba('#C0932B', 0.7),
+                            borderColor: '#C0932B',
                             borderWidth: 1,
                             borderRadius: 6
                         }
@@ -5855,35 +5866,11 @@
                 if (!standings.length) {
                     listContainer.innerHTML = `<p class="text-xs text-slate-400">선택 라운드까지 총타수가 기록된 동호회원이 없습니다.</p>`;
                 } else {
-                    listContainer.innerHTML = standings.map((s, i) => {
-                        const isScratch = s.diff === 0;
-                        const isSelected = s.player === selectedPlayer;
-                        const rankBadgeClass = i === 0 ? 'bg-amber-400 text-slate-950' : 'bg-slate-700 text-slate-200';
-                        const diffBadge = isScratch
-                            ? `<span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold whitespace-nowrap">스크래치</span>`
-                            : `<span class="px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold whitespace-nowrap">+${s.diff}타</span>`;
-                        const rowClass = isSelected
-                            ? 'flex items-center justify-between gap-3 bg-emerald-950/30 border-2 border-emerald-500/60 rounded-xl px-3.5 sm:px-4 py-3'
-                            : 'flex items-center justify-between gap-3 bg-slate-800/40 border border-slate-700/50 rounded-xl px-3.5 sm:px-4 py-3';
-                        const selectedTag = isSelected
-                            ? `<span class="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-emerald-500 text-slate-950 font-bold align-middle">나</span>`
-                            : '';
-                        return `
-                            <div class="${rowClass}">
-                                <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                                    <span class="w-6 h-6 sm:w-7 sm:h-7 rounded-full ${rankBadgeClass} flex items-center justify-center font-bold text-[11px] sm:text-xs shrink-0">${i + 1}</span>
-                                    <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center font-bold text-xs sm:text-sm shrink-0">${s.player}</span>
-                                    <div class="min-w-0">
-                                        <p class="text-xs sm:text-sm font-bold text-white truncate">${s.player} 플레이어 <span class="text-xs sm:text-sm font-bold text-emerald-300">${s.avg}</span>${selectedTag}</p>
-                                        <p class="text-[10px] sm:text-[11px] text-slate-400">평균 총타수 ${s.rawAvg.toFixed(1)} → 반올림 ${s.avg}타 (${s.roundCount}회차 평균)</p>
-                                    </div>
-                                </div>
-                                <div class="text-right shrink-0">
-                                    ${diffBadge}
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
+                    listContainer.innerHTML = '<div class="jags-board">' + standings.map((s, i) => jagsBoardRow({
+                        rank: i + 1, color: s.color, player: s.player + ' 플레이어', nameExtra: ` <span style="font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:700;margin-left:6px">${s.avg}</span>`,
+                        isScratch: s.diff === 0, diff: s.diff, isSelected: s.player === selectedPlayer,
+                        sub: `평균 총타수 ${s.rawAvg.toFixed(1)} → 반올림 ${s.avg}타 (${s.roundCount}회차 평균)`
+                    })).join('') + '</div>';
                 }
             }
 
