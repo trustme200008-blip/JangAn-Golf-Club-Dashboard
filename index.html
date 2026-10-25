@@ -991,6 +991,7 @@
                     </div>
 
                     <div id="rankFlowUnder" class="mt-3 text-[11px] sm:text-xs text-slate-300 leading-relaxed"></div>
+                    <div id="rankFlowMoves" class="mt-2 text-[11px] sm:text-xs text-slate-300 leading-relaxed"></div>
 
                     <div id="rankFlowTableWrap" class="hidden overflow-x-auto overflow-y-auto max-h-80 mt-3 rounded-xl border border-slate-700/60">
                         <table class="w-full text-xs sm:text-sm text-right">
@@ -4251,6 +4252,8 @@
         let rankFlowTimer = null;
         let rankFlowShowTable = false;
         let rankFlowShowHist = false;
+        let rankFlowCurRanks = null; // 마지막으로 그린 순위(급상승/급하락 배지 계산용)
+        const RANK_FLOW_JUMP = 2; // 직전 회차 대비 이 계단 수 이상 오르내리면 급상승/급하락
 
         function rankFlowRankAt(i) {
             const eps = 1e-9;
@@ -4413,6 +4416,7 @@
             const canvas = document.getElementById('rankFlowChart');
             if (!canvas || !DATES.length) return;
             const { ranks, ys } = rankFlowCompute(end);
+            rankFlowCurRanks = ranks;
             document.getElementById('rankFlowDate').textContent = `(2026-${DATES[end].replace('/', '-')}까지)`;
 
             const makeData = p => DATES.map((_, i) => (i <= end ? ys[p][i] : null));
@@ -4449,6 +4453,23 @@
                             ctx.fillStyle = '#fff';
                             ctx.fillText('언더', bx, by + 0.5);
                         });
+                        // 급상승/급하락: 직전 회차보다 2계단 이상 오르거나 내린 회차의 점 아래에 배지
+                        const rk = rankFlowCurRanks && rankFlowCurRanks[ds.label];
+                        if (rk) {
+                            ds.data.forEach((v, i) => {
+                                if (v == null || i === 0 || !meta.data[i] || rk[i] == null || rk[i - 1] == null) return;
+                                const move = rk[i - 1] - rk[i]; // +면 순위 상승
+                                if (Math.abs(move) < RANK_FLOW_JUMP) return;
+                                const up = move > 0;
+                                const bx = meta.data[i].x, by = meta.data[i].y + 17;
+                                ctx.fillStyle = up ? '#2E8B5E' : '#2F5F8A';
+                                ctx.beginPath();
+                                if (ctx.roundRect) ctx.roundRect(bx - 22, by - 8, 44, 16, 8); else ctx.rect(bx - 22, by - 8, 44, 16);
+                                ctx.fill();
+                                ctx.fillStyle = '#fff';
+                                ctx.fillText(up ? '▲급상승' : '▼급하락', bx, by + 0.5);
+                            });
+                        }
                         ctx.restore();
                         const pt = meta.data[last];
                         ctx.save();
@@ -4536,6 +4557,17 @@
                 });
                 underEl.innerHTML = `${badge}<b>언더 달성</b> — G핸디 0 미만을 기록한 주간입니다. ` + byPlayer.join(' · ');
             }
+
+            // 급상승/급하락 (직전 회차 대비 2계단 이상)
+            const movesEl = document.getElementById('rankFlowMoves');
+            const pill = (txt, bg) => `<span style="display:inline-block;background:${bg};color:#fff;font-weight:700;font-size:10px;padding:1px 8px;border-radius:8px;margin-right:6px">${txt}</span>`;
+            const moves = [];
+            PLAYERS.forEach(p => { for (let i = 1; i < n; i++) { const mv = ranks[p][i - 1] - ranks[p][i]; if (Math.abs(mv) >= RANK_FLOW_JUMP) moves.push({ p, i, mv, from: ranks[p][i - 1], to: ranks[p][i] }); } });
+            const fmtMoves = list => list.map(m => `<b>${m.p}</b> ${DATES[m.i]} ${m.from}위→${m.to}위`).join(' · ');
+            const ups = moves.filter(m => m.mv > 0), downs = moves.filter(m => m.mv < 0);
+            movesEl.innerHTML = (ups.length ? `<div>${pill('▲급상승', '#2E8B5E')}<b>${ups.length}회</b> — ${fmtMoves(ups)}</div>` : '')
+                + (downs.length ? `<div class="mt-1">${pill('▼급하락', '#2F5F8A')}<b>${downs.length}회</b> — ${fmtMoves(downs)}</div>` : '')
+                || `<div>${pill('급상승·급하락', '#6B7266')}직전 회차보다 ${RANK_FLOW_JUMP}계단 이상 오르내린 주간이 아직 없습니다.</div>`;
 
             // 닉네임·코멘트
             const nickEl = document.getElementById('rankFlowNicknames');
