@@ -1001,7 +1001,7 @@
 
                     <div class="mt-5">
                         <div class="flex items-center gap-1.5 mb-2">
-                            <span class="text-xs font-bold text-white">AI 코멘트 — 올해 성적추이 닉네임</span>
+                            <span class="text-xs font-bold text-white">AI 코멘트 — 올해 성적추이 닉네임 (새 기록이 쌓이면 바뀝니다)</span>
                         </div>
                         <div id="rankFlowNicknames" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
                         <div class="rounded-xl p-3.5 border-l-4 border-l-emerald-500 bg-slate-800/40 mt-3">
@@ -4515,6 +4515,14 @@
             }
             const traits = rankFlowTraits(ranks, end);
             const nicks = rankFlowNicknames(traits, n);
+            // 닉네임은 고정이 아니라 "그 시점까지의 기록"으로 매번 다시 정해집니다. 바로 직전 회차 기준
+            // 닉네임과 비교해, 이번 회차로 닉네임이 바뀐 선수는 이전 닉네임을 함께 보여줍니다.
+            let prevNicks = null;
+            if (n - 1 >= 5) {
+                const prevRanks = {};
+                PLAYERS.forEach(p => { prevRanks[p] = ranks[p].slice(0, n - 1); });
+                prevNicks = rankFlowNicknames(rankFlowTraits(prevRanks, end - 1), n - 1);
+            }
             const order = PLAYERS.slice().sort((a, b) => traits[a].avg - traits[b].avg);
             nickEl.innerHTML = order.map(p => {
                 const color = playerLineColor(p, PLAYERS.indexOf(p));
@@ -4522,7 +4530,8 @@
                 return `<div class="rounded-xl p-3 border ${me ? 'border-emerald-500' : 'border-slate-700/60'} bg-slate-800/40">
                     <div class="flex items-center gap-2"><span class="jags-dot" style="background:${color}"></span><span class="font-bold text-white text-sm">${p}</span>
                         <span class="text-sm font-bold text-emerald-300">“${nicks[p].nick}”</span></div>
-                    <p class="text-[11px] text-slate-400 mt-1">${nicks[p].why} · 평균 ${traits[p].avg.toFixed(1)}위</p></div>`;
+                    <p class="text-[11px] text-slate-400 mt-1">${nicks[p].why} · 평균 ${traits[p].avg.toFixed(1)}위</p>
+                    ${prevNicks && prevNicks[p].nick !== nicks[p].nick ? `<p class="text-[11px] mt-1" style="color:#D2362C;font-weight:600">닉네임 변경 — 직전 회차 “${prevNicks[p].nick}” → “${nicks[p].nick}”</p>` : ''}</div>`;
             }).join('');
             commentEl.textContent = rankFlowBuildComment(traits, nicks, n);
         }
