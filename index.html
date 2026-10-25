@@ -1000,10 +1000,12 @@
                     </div>
 
                     <div class="mt-5">
-                        <div class="flex items-center gap-1.5 mb-2">
+                        <div class="flex items-center justify-between gap-2 mb-2">
                             <span class="text-xs font-bold text-white">AI 코멘트 — 올해 성적추이 닉네임 (새 기록이 쌓이면 바뀝니다)</span>
+                            <button id="rankFlowHistBtn" type="button" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700/60 rounded-xl text-xs font-semibold text-slate-200 transition whitespace-nowrap">닉네임 연혁 보기</button>
                         </div>
                         <div id="rankFlowNicknames" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+                        <div id="rankFlowHistory" class="hidden mt-3 space-y-2.5"></div>
                         <div class="rounded-xl p-3.5 border-l-4 border-l-emerald-500 bg-slate-800/40 mt-3">
                             <p id="rankFlowComment" class="text-[11px] sm:text-xs text-slate-300 leading-relaxed">-</p>
                         </div>
@@ -4248,6 +4250,7 @@
         const RANK_FLOW_BASE_MS = 700;
         let rankFlowTimer = null;
         let rankFlowShowTable = false;
+        let rankFlowShowHist = false;
 
         function rankFlowRankAt(i) {
             const eps = 1e-9;
@@ -4355,6 +4358,35 @@
                 result[p] = { nick, why: `평균 ${t.avg.toFixed(1)}위, 뚜렷한 쏠림 없이 시즌을 소화` };
             });
             return result;
+        }
+
+        // 닉네임 연혁: 5회차부터 선택 회차까지, 회차마다 "그 시점까지의 기록"으로 닉네임을 다시 구합니다.
+        // 한 회차 결과만으로 닉네임이 오락가락하지 않도록, 새 닉네임이 **2회 연속** 나와야 바뀝니다
+        // (바뀔 때 시작 시점은 처음 나타난 회차). 같은 닉네임이 이어진 구간은 하나로 묶습니다.
+        // 저장된 값이 아니라 기록에서 매번 계산한 결과이고, 카드의 현재 닉네임도 이 결과의 마지막 값입니다.
+        function rankFlowHistory(ranks, end) {
+            const hist = {}, pend = {};
+            PLAYERS.forEach(p => { hist[p] = []; pend[p] = null; });
+            for (let k = 4; k <= end; k++) {
+                const sub = {};
+                PLAYERS.forEach(p => { sub[p] = ranks[p].slice(0, k + 1); });
+                const raw = rankFlowNicknames(rankFlowTraits(sub, k), k + 1);
+                PLAYERS.forEach(p => {
+                    const list = hist[p], cur = list[list.length - 1], r = raw[p];
+                    if (!cur) { list.push({ nick: r.nick, from: k, to: k, why: r.why }); return; }
+                    if (r.nick === cur.nick) { cur.to = k; cur.why = r.why; pend[p] = null; return; }
+                    if (pend[p] && pend[p].nick === r.nick) { pend[p].count++; pend[p].why = r.why; }
+                    else pend[p] = { nick: r.nick, count: 1, from: k, why: r.why };
+                    if (pend[p].count >= 2) {
+                        cur.to = pend[p].from - 1;
+                        list.push({ nick: r.nick, from: pend[p].from, to: k, why: r.why });
+                        pend[p] = null;
+                    } else {
+                        cur.to = k; // 보류 중에는 기존 닉네임 유지
+                    }
+                });
+            }
+            return hist;
         }
 
         function rankFlowBuildComment(traits, nicks, n) {
@@ -4514,15 +4546,16 @@
                 return;
             }
             const traits = rankFlowTraits(ranks, end);
-            const nicks = rankFlowNicknames(traits, n);
-            // 닉네임은 고정이 아니라 "그 시점까지의 기록"으로 매번 다시 정해집니다. 바로 직전 회차 기준
-            // 닉네임과 비교해, 이번 회차로 닉네임이 바뀐 선수는 이전 닉네임을 함께 보여줍니다.
-            let prevNicks = null;
-            if (n - 1 >= 5) {
-                const prevRanks = {};
-                PLAYERS.forEach(p => { prevRanks[p] = ranks[p].slice(0, n - 1); });
-                prevNicks = rankFlowNicknames(rankFlowTraits(prevRanks, end - 1), n - 1);
-            }
+            // 닉네임은 고정이 아니라 기록에서 매번 다시 정해지며(연혁 계산의 마지막 값), 직전 회차와 달라졌으면
+            // 이전 닉네임을 함께 보여줍니다.
+            const hist = rankFlowHistory(ranks, end);
+            const nicks = {}, prevNicks = {};
+            PLAYERS.forEach(p => {
+                const segs = hist[p], last = segs[segs.length - 1];
+                nicks[p] = { nick: last.nick, why: last.why };
+                const before = segs.find(g => g.from <= end - 1 && end - 1 <= g.to);
+                prevNicks[p] = before ? { nick: before.nick } : { nick: last.nick };
+            });
             const order = PLAYERS.slice().sort((a, b) => traits[a].avg - traits[b].avg);
             nickEl.innerHTML = order.map(p => {
                 const color = playerLineColor(p, PLAYERS.indexOf(p));
@@ -4534,6 +4567,22 @@
                     ${prevNicks && prevNicks[p].nick !== nicks[p].nick ? `<p class="text-[11px] mt-1" style="color:#D2362C;font-weight:600">닉네임 변경 — 직전 회차 “${prevNicks[p].nick}” → “${nicks[p].nick}”</p>` : ''}</div>`;
             }).join('');
             commentEl.textContent = rankFlowBuildComment(traits, nicks, n);
+
+            // 닉네임 연혁
+            const histEl = document.getElementById('rankFlowHistory');
+            histEl.classList.toggle('hidden', !rankFlowShowHist);
+            document.getElementById('rankFlowHistBtn').textContent = rankFlowShowHist ? '닉네임 연혁 접기' : '닉네임 연혁 보기';
+            if (rankFlowShowHist) {
+                histEl.innerHTML = order.map(p => {
+                    const color = playerLineColor(p, PLAYERS.indexOf(p));
+                    const segs = hist[p].map((g, gi) => {
+                        const isNow = g.to === end;
+                        const range = g.from === g.to ? DATES[g.from] : `${DATES[g.from]}~${isNow ? '현재' : DATES[g.to]}`;
+                        return `<span class="inline-block rounded-lg px-2.5 py-1 text-[11px] ${isNow ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'bg-slate-800 text-slate-300'}">“${g.nick}” <span class="text-slate-400 font-normal">${range} · ${g.to - g.from + 1}회</span></span>${gi < hist[p].length - 1 ? '<span class="text-slate-500 mx-1">→</span>' : ''}`;
+                    }).join('');
+                    return `<div class="rounded-xl p-3 border border-slate-700/60 bg-slate-800/40"><div class="flex items-center gap-2 mb-1.5"><span class="jags-dot" style="background:${color}"></span><span class="font-bold text-white text-sm">${p}</span><span class="text-[11px] text-slate-400">닉네임 ${hist[p].length}번 거침</span></div><div class="leading-8">${segs}</div></div>`;
+                }).join('');
+            }
         }
 
         function renderRankFlow() {
@@ -4567,6 +4616,8 @@
             if (!play || !tbl || !spd) return;
             play.addEventListener('click', rankFlowTogglePlay);
             tbl.addEventListener('click', () => { rankFlowShowTable = !rankFlowShowTable; rankFlowRenderTexts(Math.min(Math.max(selectedDateIndex, 0), DATES.length - 1)); });
+            const hb = document.getElementById('rankFlowHistBtn');
+            if (hb) hb.addEventListener('click', () => { rankFlowShowHist = !rankFlowShowHist; rankFlowRenderTexts(Math.min(Math.max(selectedDateIndex, 0), DATES.length - 1)); });
             spd.addEventListener('change', () => { if (rankFlowTimer) { rankFlowStop(); rankFlowTogglePlay(); } });
         }
 
