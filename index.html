@@ -4628,7 +4628,8 @@
         function rankFlowTogglePlay() {
             if (rankFlowTimer) { rankFlowStop(); renderRankFlow(); return; }
             const end = Math.min(Math.max(selectedDateIndex, 0), DATES.length - 1);
-            if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) { renderRankFlow(); return; }
+            // 재생은 사용자가 직접 누른 동작에 대한 반응이라 '움직임 줄이기' 설정이어도 막지 않습니다.
+            // (예전에는 이 설정이면 재생 없이 바로 끝 화면만 보여줘서, 설정을 켠 휴대폰에서 버튼이 안 먹는 것처럼 보였습니다.)
             const speed = Number(document.getElementById('rankFlowSpeed').value) || 1;
             let cur = 0;
             rankFlowDraw(0, false);
