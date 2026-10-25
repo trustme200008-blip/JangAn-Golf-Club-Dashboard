@@ -968,9 +968,44 @@
                     </div>
                 </div>
 
-                <!-- Bar Chart -->
-                <div class="h-56 sm:h-72 w-full relative">
-                    <canvas id="scratchChart"></canvas>
+                <!-- 플레이어 순위 변화 (G핸디 기준 범프 차트) -->
+                <div id="rankFlowPanel" class="mt-2">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                        <div>
+                            <h4 class="text-sm sm:text-base font-bold text-white">플레이어 순위 변화 <span id="rankFlowDate" class="text-xs font-normal text-slate-400"></span></h4>
+                            <p class="text-[11px] sm:text-xs text-slate-400 mt-0.5">회차마다 G핸디가 낮은 순으로 1~5위를 매겼습니다. 동률은 공동 순위이고 겹치지 않게 살짝 벌려 그렸습니다. 선택한 회차까지 그려지며, 재생하면 첫 회차부터 순위가 바뀌는 모습을 보여줍니다.</p>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <button id="rankFlowPlayBtn" type="button" class="px-3 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs transition whitespace-nowrap">▶ 시즌 재생</button>
+                            <select id="rankFlowSpeed" class="bg-slate-900 border border-slate-700 text-emerald-300 text-xs rounded-xl px-2.5 py-2 font-medium focus:outline-none">
+                                <option value="1">1×</option>
+                                <option value="2" selected>2×</option>
+                                <option value="4">4×</option>
+                            </select>
+                            <button id="rankFlowTableBtn" type="button" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700/60 rounded-xl text-xs font-semibold text-slate-200 transition whitespace-nowrap">표로 보기</button>
+                        </div>
+                    </div>
+
+                    <div class="h-64 sm:h-80 w-full relative">
+                        <canvas id="rankFlowChart"></canvas>
+                    </div>
+
+                    <div id="rankFlowTableWrap" class="hidden overflow-x-auto overflow-y-auto max-h-80 mt-3 rounded-xl border border-slate-700/60">
+                        <table class="w-full text-xs sm:text-sm text-right">
+                            <thead id="rankFlowTableHead" class="bg-slate-800/80 text-slate-300 sticky top-0"></thead>
+                            <tbody id="rankFlowTableBody" class="divide-y divide-slate-800"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-5">
+                        <div class="flex items-center gap-1.5 mb-2">
+                            <span class="text-xs font-bold text-white">AI 코멘트 — 올해 성적추이 닉네임</span>
+                        </div>
+                        <div id="rankFlowNicknames" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+                        <div class="rounded-xl p-3.5 border-l-4 border-l-emerald-500 bg-slate-800/40 mt-3">
+                            <p id="rankFlowComment" class="text-[11px] sm:text-xs text-slate-300 leading-relaxed">-</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1956,7 +1991,7 @@
         let twoPlayerRadarChart = null; // 2인 비교 오각형 차트
         let singleRadarChart = null; // 개인 5점 척도 오각형(최근 5회차) 차트
         let correlationChart = null; // 골프 지표간 상관관계 차트
-        let scratchChart = null; // 스크래치 게임 핸디차이 차트
+        let rankFlowChart = null; // 플레이어 순위 변화(범프) 차트
 
         // DOM Elements
         const playerTabsEl = document.getElementById('playerTabs');
@@ -2094,7 +2129,8 @@
                 renderCorrelationChart();
             }
             if (activeMode === 'scratch') {
-                renderScratchChart();
+                rankFlowChart && rankFlowChart.destroy(); rankFlowChart = null;
+                renderRankFlow();
             }
 
             // 코스라운드 쪽 차트도 열려있으면 함께 갱신
@@ -2183,6 +2219,7 @@
             initScoreCardModule();
             initScaleTableUI();
             initMultiTrendUI();
+            initRankFlowUI();
 
             // 구글 시트 연동이 설정돼 있으면, 다른 플레이어/관리자가 추가해둔 데이터를 불러와 병합
             await loadPlayersFromSheet();
@@ -4200,65 +4237,293 @@
                 }).join('');
             }
 
-            renderScratchChart();
+            renderRankFlow();
         }
 
-        function renderScratchChart() {
-            if (activeMode !== 'scratch') return;
-            if (!isChartJsLoaded()) { showChartFallback('scratchChart'); return; }
-            if (DATES.length === 0) return;
+        // ===== 플레이어 순위 변화 (G핸디 기준 범프 차트 + 닉네임) =====
+        // 회차마다 G핸디가 낮은 순으로 순위를 매깁니다. 동률은 공동 순위(1,1,3,...)이고, 그래프에서는
+        // 같은 칸에 겹치지 않게 y를 살짝 벌려 그립니다. 비교는 반올림 전 원래 값으로 합니다.
+        const RANK_FLOW_BASE_MS = 700;
+        let rankFlowTimer = null;
+        let rankFlowShowTable = false;
 
-            const theme = chartColors();
-            const canvas = document.getElementById('scratchChart');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
+        function rankFlowRankAt(i) {
+            const eps = 1e-9;
+            const vals = PLAYERS.map(p => GOLF_DATA[p].gHandicap[i]);
+            return vals.map(v => 1 + vals.filter(w => w < v - eps).length);
+        }
 
-            const standings = getScratchStandings().sort((a, b) => a.diff - b.diff);
-
-            if (scratchChart) {
-                scratchChart.destroy();
+        // ranks[p] = [회차별 순위...] (0..end), gaps = y 표시용 벌림값
+        function rankFlowCompute(end) {
+            const ranks = {}, ys = {}, ghs = {};
+            PLAYERS.forEach(p => { ranks[p] = []; ys[p] = []; ghs[p] = []; });
+            for (let i = 0; i <= end; i++) {
+                const r = rankFlowRankAt(i);
+                PLAYERS.forEach((p, pi) => {
+                    const group = PLAYERS.map((_, k) => k).filter(k => r[k] === r[pi]);
+                    const off = (group.indexOf(pi) - (group.length - 1) / 2) * 0.16;
+                    ranks[p].push(r[pi]);
+                    ys[p].push(r[pi] + off);
+                    ghs[p].push(GOLF_DATA[p].gHandicap[i]);
+                });
             }
+            return { ranks, ys, ghs };
+        }
 
-            scratchChart = new Chart(ctx, {
-                type: 'bar',
+        function rankFlowSeason(dateStr) {
+            const m = parseInt(dateStr.split('/')[0], 10);
+            if (m >= 3 && m <= 5) return 'spring';
+            if (m >= 6 && m <= 8) return 'summer';
+            if (m >= 9 && m <= 11) return 'autumn';
+            return 'winter';
+        }
+
+        // 선수별 특성(최장 1위, 계절 평균 순위, 최근 추세, 변동성)
+        function rankFlowTraits(ranks, end) {
+            const n = end + 1;
+            const traits = {};
+            PLAYERS.forEach(p => {
+                const r = ranks[p];
+                let best = 0, run = 0;
+                r.forEach(v => { run = v === 1 ? run + 1 : 0; best = Math.max(best, run); });
+                const avg = r.reduce((a, b) => a + b, 0) / n;
+                const sd = Math.sqrt(r.reduce((a, b) => a + (b - avg) * (b - avg), 0) / n);
+                const season = {};
+                ['spring', 'summer', 'autumn'].forEach(sn => {
+                    const list = r.filter((_, i) => rankFlowSeason(DATES[i]) === sn);
+                    season[sn] = list.length >= 3 ? list.reduce((a, b) => a + b, 0) / list.length : null;
+                });
+                const k = Math.min(5, n);
+                const tail = r.slice(n - k);
+                let delta = 0;
+                if (k >= 3) {
+                    const fit = linearRegression(tail.map((_, i) => i), tail);
+                    delta = fit.slope * (k - 1);
+                }
+                const firstCount = r.filter(v => v === 1).length;
+                traits[p] = { best, avg, sd, season, delta, k, firstCount, last: r[n - 1] };
+            });
+            return traits;
+        }
+
+        const RANK_FLOW_SEASON_LABEL = { spring: '봄', summer: '여름', autumn: '가을' };
+
+        // 선수당 닉네임 하나. 후보를 점수로 겨뤄 가장 두드러진 특성을 고르고, 같은 닉네임이 겹치지 않게 배정합니다.
+        function rankFlowNicknames(traits, n) {
+            const cands = [];
+            PLAYERS.forEach(p => {
+                const t = traits[p];
+                const add = (nick, score, why) => cands.push({ p, nick, score, why });
+                if (t.best >= 3) add('붙박이 챔피언', (t.best / n) * 10 + 2, `최장 ${t.best}회 연속 1위`);
+                const seasons = Object.keys(t.season).filter(sn => t.season[sn] != null);
+                if (seasons.length >= 2) {
+                    const bestSn = seasons.reduce((a, b) => (t.season[a] <= t.season[b] ? a : b));
+                    const others = seasons.filter(sn => sn !== bestSn);
+                    const gap = others.reduce((a, sn) => a + t.season[sn], 0) / others.length - t.season[bestSn];
+                    if (gap >= 0.6) {
+                        const nick = { spring: '봄바람 스나이퍼', summer: '여름의 지배자', autumn: '가을 승부사' }[bestSn];
+                        add(nick, gap * 3, `${RANK_FLOW_SEASON_LABEL[bestSn]} 평균 ${t.season[bestSn].toFixed(1)}위로 가장 강했음`);
+                    }
+                    if (t.season.summer != null) {
+                        const rest = seasons.filter(sn => sn !== 'summer');
+                        if (rest.length) {
+                            const restAvg = rest.reduce((a, sn) => a + t.season[sn], 0) / rest.length;
+                            const slump = t.season.summer - restAvg;
+                            if (slump >= 0.8) add('더위 먹은 에이스', slump * 3.2, `여름 평균 ${t.season.summer.toFixed(1)}위로 다른 계절(${restAvg.toFixed(1)}위)보다 부진`);
+                        }
+                    }
+                }
+                if (t.k >= 3 && t.delta <= -1) add('후반기 로켓', Math.abs(t.delta) * 2.5, `최근 ${t.k}회 동안 순위가 약 ${Math.abs(t.delta).toFixed(1)}계단 상승`);
+                if (t.k >= 3 && t.delta >= 1) add('내리막의 승부사', t.delta * 2.5, `최근 ${t.k}회 동안 순위가 약 ${t.delta.toFixed(1)}계단 하락`);
+                if (t.sd >= 1.2) add('롤러코스터', t.sd * 3, `순위 변동 폭이 큼(표준편차 ${t.sd.toFixed(1)})`);
+                if (t.sd <= 0.7) add(t.avg <= 2.5 ? '변함없는 강자' : (t.avg <= 3.5 ? '꾸준함의 미학' : '묵묵한 뚝심'), (1 - t.sd) * 4, `순위가 거의 흔들리지 않음(평균 ${t.avg.toFixed(1)}위)`);
+            });
+            cands.sort((a, b) => b.score - a.score);
+            const result = {}, used = new Set();
+            cands.forEach(c => {
+                if (result[c.p] || used.has(c.nick)) return;
+                result[c.p] = { nick: c.nick, why: c.why };
+                used.add(c.nick);
+            });
+            PLAYERS.forEach(p => {
+                if (result[p]) return;
+                const t = traits[p];
+                const nick = ['묵묵한 완주자', '숨은 복병', '조용한 추격자', '필드의 나그네', '느긋한 산책가'].find(x => !used.has(x)) || `${p}의 시즌`;
+                used.add(nick);
+                result[p] = { nick, why: `평균 ${t.avg.toFixed(1)}위, 뚜렷한 쏠림 없이 시즌을 소화` };
+            });
+            return result;
+        }
+
+        function rankFlowBuildComment(traits, nicks, n) {
+            const parts = [];
+            const topRun = PLAYERS.reduce((a, b) => (traits[a].best >= traits[b].best ? a : b));
+            if (traits[topRun].best >= 2) parts.push(`최장기간 1위는 ${topRun}${josa(topRun, '으로', '로')}, ${traits[topRun].best}회 연속 자리를 지켰습니다.`);
+            const topCount = PLAYERS.reduce((a, b) => (traits[a].firstCount >= traits[b].firstCount ? a : b));
+            if (traits[topCount].firstCount > 0 && topCount !== topRun) parts.push(`1위에 가장 많이 오른 선수는 ${topCount}(${traits[topCount].firstCount}회)입니다.`);
+            const risers = PLAYERS.filter(p => traits[p].k >= 3 && traits[p].delta <= -1).sort((a, b) => traits[a].delta - traits[b].delta);
+            const fallers = PLAYERS.filter(p => traits[p].k >= 3 && traits[p].delta >= 1).sort((a, b) => traits[b].delta - traits[a].delta);
+            if (risers.length) parts.push(`최근 가파르게 오르는 선수는 ${risers.join(', ')}${josa(risers[risers.length - 1], '입니다', '입니다')}.`);
+            if (fallers.length) parts.push(`반대로 ${fallers.join(', ')}${josa(fallers[fallers.length - 1], '은', '는')} 최근 순위가 내려가는 중입니다.`);
+            if (!parts.length) parts.push(`뚜렷하게 치고 나가는 선수 없이 순위가 비슷하게 유지되고 있습니다.`);
+            return `${n}회차 기록 기준. ` + parts.join(' ');
+        }
+
+        function rankFlowStop() {
+            if (rankFlowTimer) { clearInterval(rankFlowTimer); rankFlowTimer = null; }
+            const btn = document.getElementById('rankFlowPlayBtn');
+            if (btn) btn.textContent = '▶ 시즌 재생';
+        }
+
+        function rankFlowDraw(end, animate) {
+            const canvas = document.getElementById('rankFlowChart');
+            if (!canvas || !DATES.length) return;
+            const { ranks, ys } = rankFlowCompute(end);
+            document.getElementById('rankFlowDate').textContent = `(2026-${DATES[end].replace('/', '-')}까지)`;
+
+            const makeData = p => DATES.map((_, i) => (i <= end ? ys[p][i] : null));
+            if (animate && rankFlowChart) {
+                PLAYERS.forEach((p, k) => { rankFlowChart.data.datasets[k].data = makeData(p); });
+                rankFlowChart.update('none');
+                return;
+            }
+            if (!isChartJsLoaded()) { showChartFallback('rankFlowChart'); return; }
+            const theme = chartColors();
+            if (rankFlowChart) rankFlowChart.destroy();
+            const labelPlugin = {
+                id: 'rankFlowEndLabels',
+                afterDatasetsDraw(chart) {
+                    const ctx = chart.ctx;
+                    chart.data.datasets.forEach((ds, di) => {
+                        const meta = chart.getDatasetMeta(di);
+                        let last = -1;
+                        ds.data.forEach((v, i) => { if (v != null) last = i; });
+                        if (last < 0 || !meta.data[last]) return;
+                        const pt = meta.data[last];
+                        ctx.save();
+                        ctx.font = "700 12px 'IBM Plex Sans KR', sans-serif";
+                        ctx.fillStyle = ds.borderColor;
+                        ctx.textBaseline = 'middle';
+                        ctx.textAlign = last > DATES.length - 3 ? 'right' : 'left';
+                        ctx.fillText(ds.label, pt.x + (ctx.textAlign === 'left' ? 9 : -9), pt.y - (ctx.textAlign === 'right' ? 12 : 0));
+                        ctx.restore();
+                    });
+                }
+            };
+            rankFlowChart = new Chart(canvas.getContext('2d'), {
+                type: 'line',
                 data: {
-                    labels: standings.map(s => s.player),
-                    datasets: [{
-                        label: '핸디차이(타)',
-                        data: standings.map(s => s.diff),
-                        backgroundColor: standings.map(s => s.diff === 0 ? theme.accent : hexToRgba(s.color, 0.65)),
-                        borderColor: standings.map(s => s.color),
-                        borderWidth: 1.5,
-                        borderRadius: 6,
-                        maxBarThickness: 56
-                    }]
+                    labels: DATES,
+                    datasets: PLAYERS.map((p, idx) => {
+                        const color = playerLineColor(p, idx);
+                        const sel = p === selectedPlayer;
+                        return {
+                            label: p, data: makeData(p), borderColor: color, backgroundColor: color,
+                            borderWidth: sel ? 4 : 2, pointRadius: sel ? 4 : 2.5, pointHoverRadius: 6,
+                            tension: 0, fill: false, spanGaps: false, order: sel ? 0 : 1
+                        };
+                    })
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    responsive: true, maintainAspectRatio: false, animation: false,
+                    interaction: { mode: 'index', intersect: false },
+                    layout: { padding: { right: 10 } },
                     plugins: {
                         legend: { display: false },
                         tooltip: {
+                            itemSort: (a, b) => a.parsed.y - b.parsed.y,
                             callbacks: {
-                                label: function(context) {
-                                    return context.parsed.y === 0 ? '스크래치 (0타)' : `+${context.parsed.y}타`;
+                                label: ctx => {
+                                    const p = ctx.dataset.label;
+                                    const i = ctx.dataIndex;
+                                    const rk = rankFlowRankAt(i)[PLAYERS.indexOf(p)];
+                                    return `${rk}위 ${p} (G핸디 ${GOLF_DATA[p].gHandicap[i].toFixed(1)})`;
                                 }
                             }
                         }
                     },
                     scales: {
-                        x: {
-                            ticks: { color: theme.tick, font: { family: 'Noto Sans KR', weight: 'bold' } },
-                            grid: { display: false }
-                        },
+                        x: { ticks: { color: theme.tick, font: { size: 10 }, maxRotation: 60, autoSkip: true }, grid: { color: theme.grid } },
                         y: {
-                            beginAtZero: true,
-                            ticks: { color: theme.tick, stepSize: 1, precision: 0 },
+                            reverse: true, min: 0.5, max: 5.5,
+                            ticks: { color: theme.tick, stepSize: 1, callback: v => (Number.isInteger(v) && v >= 1 && v <= 5 ? `${v}위` : '') },
                             grid: { color: theme.grid }
                         }
                     }
-                }
+                },
+                plugins: [labelPlugin]
             });
+        }
+
+        function rankFlowRenderTexts(end) {
+            const { ranks, ghs } = rankFlowCompute(end);
+            const n = end + 1;
+
+            // 표
+            const head = document.getElementById('rankFlowTableHead');
+            const body = document.getElementById('rankFlowTableBody');
+            head.innerHTML = '<tr><th class="p-2.5 text-left">회차</th>' + PLAYERS.map(p => `<th class="p-2.5">${p}</th>`).join('') + '</tr>';
+            body.innerHTML = Array.from({ length: n }, (_, k) => n - 1 - k).map(i =>
+                `<tr><td class="p-2.5 text-left text-slate-300 whitespace-nowrap">2026-${DATES[i].replace('/', '-')}</td>` +
+                PLAYERS.map(p => `<td class="p-2.5 whitespace-nowrap"><b>${ranks[p][i]}위</b> <span class="text-[10px] text-slate-400">${ghs[p][i].toFixed(1)}</span></td>`).join('') + '</tr>'
+            ).join('');
+            document.getElementById('rankFlowTableWrap').classList.toggle('hidden', !rankFlowShowTable);
+            document.getElementById('rankFlowTableBtn').textContent = rankFlowShowTable ? '표 접기' : '표로 보기';
+
+            // 닉네임·코멘트
+            const nickEl = document.getElementById('rankFlowNicknames');
+            const commentEl = document.getElementById('rankFlowComment');
+            if (n < 5) {
+                nickEl.innerHTML = '';
+                commentEl.textContent = '기록이 5회차 미만이라 성적추이를 평가하기 어렵습니다. 더 뒤의 회차를 선택해 보세요.';
+                return;
+            }
+            const traits = rankFlowTraits(ranks, end);
+            const nicks = rankFlowNicknames(traits, n);
+            const order = PLAYERS.slice().sort((a, b) => traits[a].avg - traits[b].avg);
+            nickEl.innerHTML = order.map(p => {
+                const color = playerLineColor(p, PLAYERS.indexOf(p));
+                const me = p === selectedPlayer;
+                return `<div class="rounded-xl p-3 border ${me ? 'border-emerald-500' : 'border-slate-700/60'} bg-slate-800/40">
+                    <div class="flex items-center gap-2"><span class="jags-dot" style="background:${color}"></span><span class="font-bold text-white text-sm">${p}</span>
+                        <span class="text-sm font-bold text-emerald-300">“${nicks[p].nick}”</span></div>
+                    <p class="text-[11px] text-slate-400 mt-1">${nicks[p].why} · 평균 ${traits[p].avg.toFixed(1)}위</p></div>`;
+            }).join('');
+            commentEl.textContent = rankFlowBuildComment(traits, nicks, n);
+        }
+
+        function renderRankFlow() {
+            if (activeMode !== 'scratch' || !DATES.length) return;
+            rankFlowStop();
+            const end = Math.min(Math.max(selectedDateIndex, 0), DATES.length - 1);
+            rankFlowDraw(end, false);
+            rankFlowRenderTexts(end);
+        }
+
+        function rankFlowTogglePlay() {
+            if (rankFlowTimer) { rankFlowStop(); renderRankFlow(); return; }
+            const end = Math.min(Math.max(selectedDateIndex, 0), DATES.length - 1);
+            if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) { renderRankFlow(); return; }
+            const speed = Number(document.getElementById('rankFlowSpeed').value) || 1;
+            let cur = 0;
+            rankFlowDraw(0, false);
+            document.getElementById('rankFlowPlayBtn').textContent = '■ 정지';
+            rankFlowTimer = setInterval(() => {
+                cur++;
+                if (cur >= end) { rankFlowStop(); rankFlowDraw(end, true); rankFlowRenderTexts(end); return; }
+                rankFlowDraw(cur, true);
+            }, RANK_FLOW_BASE_MS / speed);
+            if (end === 0) { rankFlowStop(); rankFlowRenderTexts(end); }
+        }
+
+        function initRankFlowUI() {
+            const play = document.getElementById('rankFlowPlayBtn');
+            const tbl = document.getElementById('rankFlowTableBtn');
+            const spd = document.getElementById('rankFlowSpeed');
+            if (!play || !tbl || !spd) return;
+            play.addEventListener('click', rankFlowTogglePlay);
+            tbl.addEventListener('click', () => { rankFlowShowTable = !rankFlowShowTable; rankFlowRenderTexts(Math.min(Math.max(selectedDateIndex, 0), DATES.length - 1)); });
+            spd.addEventListener('change', () => { if (rankFlowTimer) { rankFlowStop(); rankFlowTogglePlay(); } });
         }
 
         function renderFullTable() {
