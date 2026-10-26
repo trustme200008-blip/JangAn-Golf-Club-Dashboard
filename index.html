@@ -156,6 +156,27 @@
         .jags-score { min-width: 76px; height: 40px; padding: 0 10px; font-size: 1.7rem; flex-shrink: 0; }
         .jags-score small { font-family: 'IBM Plex Sans KR', sans-serif; font-size: 0.7rem; font-weight: 600; margin-left: 2px; }
         .jags-score.scratch { background: #D2362C; color: #fff; font-family: 'IBM Plex Sans KR', sans-serif; font-size: 0.85rem; font-weight: 700; }
+        /* ===== 코스라운드 게임: 경기 기본 설정 ===== */
+        .jags-setup-head { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 4px;
+            background: transparent; border: 0; font-weight: 700; font-size: 0.95rem; color: var(--fairway); cursor: pointer; text-align: left; }
+        .jags-setup-box { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; padding: 14px; background: #E9EFE3; border: 1px solid var(--line); border-radius: 16px; }
+        .jags-setup-field { flex: 1 1 150px; min-width: 0; }
+        .jags-setup-field label { display: block; font-size: 0.8rem; font-weight: 700; color: #4A4F46; margin-bottom: 6px; }
+        .jags-setup-input { width: 100%; padding: 11px 14px; background: #FBFCF8; border: 1px solid var(--line); border-radius: 12px;
+            font-family: 'Barlow Condensed', 'IBM Plex Sans KR', sans-serif; font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .jags-setup-input.jags-teal { color: #1B7A6E; } .jags-setup-input.jags-gold { color: #8A5F14; }
+        .jags-setup-input:focus { outline: 2px solid var(--pin); outline-offset: 1px; }
+        .jags-setup-apply { padding: 12px 18px; background: #8A5F14; color: #fff; border: 0; border-radius: 12px; font-weight: 700; font-size: 0.9rem; cursor: pointer; flex: 0 0 auto; }
+        .jags-setup-apply:hover { background: #7A5310; }
+        .jags-stake-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 4px; border-bottom: 1px solid var(--line); }
+        .jags-stake-row:last-child { border-bottom: 0; }
+        .jags-stake-amt { font-family: 'Barlow Condensed', 'IBM Plex Sans KR', sans-serif; font-weight: 700; font-size: 1.5rem; font-variant-numeric: tabular-nums; color: #8A5F14; }
+        html:not(.light) .jags-setup-head { color: #8FBF9F; }
+        html:not(.light) .jags-setup-box { background: #16241D; border-color: #2A3B31; }
+        html:not(.light) .jags-setup-field label { color: #C9D2C4; }
+        html:not(.light) .jags-setup-input { background: #101A15; border-color: #2A3B31; }
+        html:not(.light) .jags-setup-input.jags-teal { color: #5FD0BE; } html:not(.light) .jags-setup-input.jags-gold { color: #E0B25A; }
+        html:not(.light) .jags-stake-row { border-color: #2A3B31; } html:not(.light) .jags-stake-amt { color: #E0B25A; }
         .jags-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
 
         /* ---------- 주간(기본) ---------- */
@@ -1571,9 +1592,30 @@
                         </div>
                     </div>
 
-                    <!-- Bar Chart -->
-                    <div class="h-56 sm:h-72 w-full relative">
-                        <canvas id="crGameChart"></canvas>
+                    <!-- 경기 기본 설정 (1타당 금액 · 판돈 일괄 설정) -->
+                    <div id="crBetSetup" class="jags-setup">
+                        <button id="crBetToggle" type="button" class="jags-setup-head" aria-expanded="true">
+                            <span class="flex items-center gap-2">
+                                <svg class="shrink-0" style="width:1.1em;height:1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+                                경기 기본 설정
+                            </span>
+                            <svg id="crBetChevron" class="shrink-0" style="width:1.1em;height:1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                        </button>
+                        <div id="crBetBody">
+                            <div class="jags-setup-box">
+                                <div class="jags-setup-field">
+                                    <label for="crBetPerStroke">1타당 금액 (원)</label>
+                                    <input id="crBetPerStroke" type="text" inputmode="numeric" autocomplete="off" class="jags-setup-input jags-teal" value="1,000">
+                                </div>
+                                <div class="jags-setup-field">
+                                    <label for="crBetPot">판돈 일괄 설정 (원)</label>
+                                    <input id="crBetPot" type="text" inputmode="numeric" autocomplete="off" class="jags-setup-input jags-gold" value="100,000">
+                                </div>
+                                <button id="crBetApply" type="button" class="jags-setup-apply">적용</button>
+                            </div>
+                            <p id="crBetError" class="hidden text-xs mt-2" style="color:#B3261E">판돈은 0보다 큰 숫자로 입력해 주세요.</p>
+                            <div id="crBetResult" class="mt-4"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2147,7 +2189,6 @@
             if (typeof crActiveMode !== 'undefined') {
                 if (crActiveMode === 'compare' && typeof crRenderCompareChart === 'function') crRenderCompareChart();
                 if (crActiveMode === 'trend' && typeof crRenderTrendChart === 'function') { crRenderTrendChart(); crRenderCompanionTrendChart(); }
-                if (crActiveMode === 'game' && typeof crRenderGameChart === 'function') crRenderGameChart();
             }
         }
 
@@ -5014,7 +5055,6 @@
         let crActiveMode = 'single';
         let crTrendChart = null;
         let crCompanionTrendChart = null; // 코스라운드 동반자 지표 비교 꺾은선 그래프
-        let crGameChart = null;
         let crCompareChart = null;
         let crGoalChart = null; // 연도별 평균 타수 비교(전년 대비/목표 대비) 막대 그래프
         const CR_CACHE_KEY = 'jangan_golf_course_round_cache_v1';
@@ -5343,6 +5383,7 @@
             crInitPlayerInputs();
             crSetupEventListeners();
             crSetupGoalPanelEvents();
+            crInitBetSetup();
             crSetMode('single');
         }
 
@@ -6355,61 +6396,76 @@
                 }
             }
 
-            crRenderGameChart();
+            crRenderBetSetup();
         }
 
-        function crRenderGameChart() {
-            if (crActiveMode !== 'game') return;
-            const canvas = document.getElementById('crGameChart');
-            if (!canvas) return;
-            if (!isChartJsLoaded()) { showChartFallback('crGameChart'); return; }
+        // ===== 코스라운드 게임: 경기 기본 설정 (1타당 금액 · 판돈 일괄 설정) =====
+        // "적용"을 누르면 플레이어 전원에게 같은 시작 판돈을 배정해 보여줍니다. 값은 이 브라우저에 기억됩니다.
+        const CR_BET_KEY = 'jangan_golf_cr_bet_v1';
+        let crBet = { perStroke: 1000, pot: 100000, applied: false, open: true };
 
-            const theme = chartColors();
-            const standings = crGetGameStandings().sort((a, b) => a.diff - b.diff);
-
-            if (crGameChart) { crGameChart.destroy(); crGameChart = null; }
-            if (!standings.length) return;
-
-            crGameChart = new Chart(canvas, {
-                type: 'bar',
-                data: {
-                    labels: standings.map(s => s.player),
-                    datasets: [{
-                        label: '평균 타수 차이(타)',
-                        data: standings.map(s => s.diff),
-                        backgroundColor: standings.map(s => s.diff === 0 ? theme.accent : hexToRgba(s.color, 0.65)),
-                        borderColor: standings.map(s => s.color),
-                        borderWidth: 1.5,
-                        borderRadius: 6,
-                        maxBarThickness: 56
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return context.parsed.y === 0 ? '스크래치 (0타)' : `+${context.parsed.y}타`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            ticks: { color: theme.tick, font: { family: 'Noto Sans KR', weight: 'bold' } },
-                            grid: { display: false }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            ticks: { color: theme.tick, stepSize: 1, precision: 0 },
-                            grid: { color: theme.grid }
-                        }
-                    }
+        function crBetLoad() {
+            try {
+                const v = JSON.parse(localStorage.getItem(CR_BET_KEY) || 'null');
+                if (v && typeof v === 'object') {
+                    if (Number.isFinite(v.perStroke)) crBet.perStroke = v.perStroke;
+                    if (Number.isFinite(v.pot)) crBet.pot = v.pot;
+                    crBet.applied = !!v.applied;
+                    crBet.open = v.open !== false;
                 }
+            } catch (err) { /* 저장값이 없거나 깨졌으면 기본값 */ }
+        }
+        function crBetSave() { try { localStorage.setItem(CR_BET_KEY, JSON.stringify(crBet)); } catch (err) { /* 저장 불가 환경은 무시 */ } }
+        const crBetFmt = n => Number(n).toLocaleString('ko-KR');
+        const crBetParse = str => parseInt(String(str).replace(/[^0-9]/g, ''), 10);
+
+        function crRenderBetSetup() {
+            const box = document.getElementById('crBetBody');
+            if (!box) return;
+            box.classList.toggle('hidden', !crBet.open);
+            document.getElementById('crBetToggle').setAttribute('aria-expanded', String(crBet.open));
+            document.getElementById('crBetChevron').style.transform = crBet.open ? '' : 'rotate(180deg)';
+            const per = document.getElementById('crBetPerStroke'), pot = document.getElementById('crBetPot');
+            if (document.activeElement !== per) per.value = crBetFmt(crBet.perStroke);
+            if (document.activeElement !== pot) pot.value = crBetFmt(crBet.pot);
+
+            const res = document.getElementById('crBetResult');
+            if (!crBet.applied) {
+                res.innerHTML = '<p class="text-[11px] sm:text-xs text-slate-400">금액을 정하고 <b>적용</b>을 누르면 플레이어별 시작 판돈이 표시됩니다.</p>';
+                return;
+            }
+            const total = crBet.pot * PLAYERS.length;
+            res.innerHTML = `
+                <div class="flex items-baseline justify-between gap-2 mb-1">
+                    <span class="text-sm font-bold text-white">플레이어별 시작 판돈</span>
+                    <span class="text-[11px] sm:text-xs text-slate-400">1타당 ${crBetFmt(crBet.perStroke)}원 · 총 판돈 ${crBetFmt(total)}원</span>
+                </div>
+                <div>${PLAYERS.map((p, i) => `
+                    <div class="jags-stake-row">
+                        <span class="flex items-center gap-2 font-bold text-white text-sm"><span class="jags-dot" style="background:${playerLineColor(p, i)}"></span>${p}${p === selectedPlayer ? ' <span class="text-[10px] text-slate-400 font-normal">(나)</span>' : ''}</span>
+                        <span class="jags-stake-amt">${crBetFmt(crBet.pot)}<small style="font-size:0.75rem;margin-left:2px;font-family:'IBM Plex Sans KR',sans-serif">원</small></span>
+                    </div>`).join('')}</div>`;
+        }
+
+        function crInitBetSetup() {
+            crBetLoad();
+            const per = document.getElementById('crBetPerStroke'), pot = document.getElementById('crBetPot');
+            const apply = document.getElementById('crBetApply'), tog = document.getElementById('crBetToggle');
+            if (!per || !pot || !apply || !tog) return;
+            [per, pot].forEach(el => el.addEventListener('input', () => {
+                const n = crBetParse(el.value);
+                el.value = Number.isFinite(n) ? crBetFmt(n) : '';
+            }));
+            tog.addEventListener('click', () => { crBet.open = !crBet.open; crBetSave(); crRenderBetSetup(); });
+            apply.addEventListener('click', () => {
+                const ps = crBetParse(per.value), pt = crBetParse(pot.value);
+                const err = document.getElementById('crBetError');
+                if (!Number.isFinite(pt) || pt <= 0 || !Number.isFinite(ps) || ps < 0) { err.classList.remove('hidden'); return; }
+                err.classList.add('hidden');
+                crBet.perStroke = ps; crBet.pot = pt; crBet.applied = true;
+                crBetSave(); crRenderBetSetup();
             });
+            crRenderBetSetup();
         }
 
         function crRenderRankView() {
