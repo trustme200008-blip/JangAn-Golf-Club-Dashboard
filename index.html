@@ -177,6 +177,13 @@
         html:not(.light) .jags-setup-input { background: #101A15; border-color: #2A3B31; }
         html:not(.light) .jags-setup-input.jags-teal { color: #5FD0BE; } html:not(.light) .jags-setup-input.jags-gold { color: #E0B25A; }
         html:not(.light) .jags-stake-row { border-color: #2A3B31; } html:not(.light) .jags-stake-amt { color: #E0B25A; }
+        .jags-settle { padding: 12px 14px; border: 1px solid var(--line); border-radius: 6px; background: #FBFCF8; }
+        .jags-settle.is-me { border-color: var(--fairway); box-shadow: inset 3px 0 0 var(--fairway); }
+        .jags-settle-line { margin-top: 8px; font-size: 0.78rem; color: #444A41; }
+        .jags-settle-chip { display: inline-block; margin: 4px 6px 0 0; padding: 3px 9px; border-radius: 10px; background: #E9EFE3; color: #2A2E29; font-size: 0.75rem; font-weight: 600; }
+        .jags-settle-chip small { color: #6B7266; font-weight: 400; }
+        html:not(.light) .jags-settle { background: #16241D; border-color: #2A3B31; } html:not(.light) .jags-settle.is-me { border-color: #8FBF9F; box-shadow: inset 3px 0 0 #8FBF9F; }
+        html:not(.light) .jags-settle-line { color: #C9D2C4; } html:not(.light) .jags-settle-chip { background: #22342A; color: #E7ECE4; }
         .jags-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
 
         /* ---------- 주간(기본) ---------- */
@@ -6431,29 +6438,47 @@
 
             const res = document.getElementById('crBetResult');
             if (!crBet.applied) {
-                res.innerHTML = '<p class="text-[11px] sm:text-xs text-slate-400">1타당 금액을 정하고 <b>적용</b>을 누르면 플레이어별 시작 판돈(타수 차이 × 1타당 금액)이 표시됩니다.</p>';
+                res.innerHTML = '<p class="text-[11px] sm:text-xs text-slate-400">1타당 금액을 정하고 <b>적용</b>을 누르면 플레이어별로 주고받는 금액과 그 합계(판돈)가 표시됩니다.</p>';
                 return;
             }
-            // 시작 판돈 = 스크래치 게임의 타수 차이 × 1타당 금액. 스크래치(0타) 선수는 0원이고,
-            // 타수 차이는 위 순위표와 같은 값(선택 라운드 포함 직전 5회 평균을 정수로 반올림한 뒤 뺀 값)입니다.
+            // 판돈 = 선수끼리 "타수 차이 × 1타당 금액"을 주고받은 금액의 합산입니다.
+            // 타수는 스크래치 순위표와 같은 값(선택 라운드 포함 직전 5회 평균을 정수로 반올림한 값)이고,
+            // 타수가 더 낮은(잘 친) 선수가 더 높은 선수로부터 차이만큼 받고, 반대면 그만큼 줍니다. 같으면 주고받지 않습니다.
             const standings = crGetGameStandings().sort((a, b) => a.rawAvg - b.rawAvg);
             if (!standings.length) {
                 res.innerHTML = '<p class="text-[11px] sm:text-xs text-slate-400">선택 라운드까지 총타수가 기록된 동호회원이 없어 계산할 수 없습니다.</p>';
                 return;
             }
+            const won = n => crBetFmt(n) + '원';
+            const rows = standings.map(me => {
+                const get = [], pay = [];
+                standings.forEach(o => {
+                    if (o.player === me.player) return;
+                    const d = o.avg - me.avg; // + : 상대가 더 많이 침 → 내가 받음
+                    if (d > 0) get.push({ who: o.player, amt: d * crBet.perStroke, d });
+                    else if (d < 0) pay.push({ who: o.player, amt: -d * crBet.perStroke, d: -d });
+                });
+                const getSum = get.reduce((a, x) => a + x.amt, 0), paySum = pay.reduce((a, x) => a + x.amt, 0);
+                return { me, get, pay, getSum, paySum, net: getSum - paySum };
+            });
+            const line = (arr, verb) => arr.length
+                ? arr.map(x => `<span class="jags-settle-chip">${x.who}${verb === 'get' ? '으로부터' : '에게'} ${won(x.amt)} <small>(${x.d}타)</small></span>`).join('')
+                : '<span class="text-[11px] text-slate-400">없음</span>';
             res.innerHTML = `
-                <div class="flex items-baseline justify-between gap-2 mb-1">
-                    <span class="text-sm font-bold text-white">플레이어별 시작 판돈</span>
-                    <span class="text-[11px] sm:text-xs text-slate-400">타수 차이 × ${crBetFmt(crBet.perStroke)}원</span>
+                <div class="flex items-baseline justify-between gap-2 mb-2">
+                    <span class="text-sm font-bold text-white">플레이어별 판돈 (주고받는 금액 합산)</span>
+                    <span class="text-[11px] sm:text-xs text-slate-400">타수 차이 × ${won(crBet.perStroke)}</span>
                 </div>
-                <div>${standings.map(s => `
-                    <div class="jags-stake-row">
-                        <span class="min-w-0">
-                            <span class="flex items-center gap-2 font-bold text-white text-sm"><span class="jags-dot" style="background:${s.color}"></span>${s.player}${s.player === selectedPlayer ? ' <span class="text-[10px] text-slate-400 font-normal">(나)</span>' : ''}</span>
-                            <span class="block text-[11px] text-slate-400 mt-0.5">${s.diff === 0 ? '스크래치' : `타수 차이 ${s.diff}타`}${s.diff === 0 ? '' : ` × ${crBetFmt(crBet.perStroke)}원`}</span>
-                        </span>
-                        <span class="jags-stake-amt">${crBetFmt(s.diff * crBet.perStroke)}<small style="font-size:0.75rem;margin-left:2px;font-family:'IBM Plex Sans KR',sans-serif">원</small></span>
-                    </div>`).join('')}</div>`;
+                <div class="space-y-2.5">${rows.map(r => `
+                    <div class="jags-settle${r.me.player === selectedPlayer ? ' is-me' : ''}">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="flex items-center gap-2 font-bold text-white text-sm"><span class="jags-dot" style="background:${r.me.color}"></span>${r.me.player}${r.me.player === selectedPlayer ? ' <span class="text-[10px] text-slate-400 font-normal">(나)</span>' : ''}<span class="text-[11px] text-slate-400 font-normal">평균 ${r.me.avg}타</span></span>
+                            <span class="jags-stake-amt" style="color:${r.net > 0 ? '#1F6B47' : (r.net < 0 ? '#2F5F8A' : 'inherit')}">${r.net > 0 ? '+' : (r.net < 0 ? '−' : '')}${crBetFmt(Math.abs(r.net))}<small style="font-size:0.75rem;margin-left:2px;font-family:'IBM Plex Sans KR',sans-serif">원</small></span>
+                        </div>
+                        <div class="jags-settle-line"><b>받는 금액</b> <span class="text-slate-400">합계 ${won(r.getSum)}</span><div>${line(r.get, 'get')}</div></div>
+                        <div class="jags-settle-line"><b>주는 금액</b> <span class="text-slate-400">합계 ${won(r.paySum)}</span><div>${line(r.pay, 'pay')}</div></div>
+                    </div>`).join('')}</div>
+                <p class="text-[11px] text-slate-400 mt-2">오른쪽 큰 금액은 받는 금액 − 주는 금액의 합계이며, 5명의 합계는 항상 0원입니다.</p>`;
         }
 
         function crInitBetSetup() {
