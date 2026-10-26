@@ -6438,12 +6438,12 @@
 
             const res = document.getElementById('crBetResult');
             if (!crBet.applied) {
-                res.innerHTML = '<p class="text-[11px] sm:text-xs text-slate-400">1타당 금액을 정하고 <b>적용</b>을 누르면 플레이어별로 주고받는 금액과 그 합계(판돈)가 표시됩니다.</p>';
+                res.innerHTML = '<p class="text-[11px] sm:text-xs text-slate-400">금액을 정하고 <b>적용</b>을 누르면 기본 판돈에 주고받는 금액을 더하거나 뺀 플레이어별 판돈이 표시됩니다.</p>';
                 return;
             }
-            // 판돈 = 선수끼리 "타수 차이 × 1타당 금액"을 주고받은 금액의 합산입니다.
+            // 판돈 = "판돈 일괄 설정" 금액에서, 선수끼리 "타수 차이 × 1타당 금액"을 주고받은 합계를 더하거나 뺀 값입니다.
             // 타수는 스크래치 순위표와 같은 값(선택 라운드 포함 직전 5회 평균을 정수로 반올림한 값)이고,
-            // 타수가 더 낮은(잘 친) 선수가 더 높은 선수로부터 차이만큼 받고, 반대면 그만큼 줍니다. 같으면 주고받지 않습니다.
+            // 핸디가 낮은(잘 치는) 선수가 높은 선수에게 타수 차이만큼 **지불**하고, 반대면 그만큼 **받습니다**. 같으면 주고받지 않습니다.
             const standings = crGetGameStandings().sort((a, b) => a.rawAvg - b.rawAvg);
             if (!standings.length) {
                 res.innerHTML = '<p class="text-[11px] sm:text-xs text-slate-400">선택 라운드까지 총타수가 기록된 동호회원이 없어 계산할 수 없습니다.</p>';
@@ -6454,31 +6454,32 @@
                 const get = [], pay = [];
                 standings.forEach(o => {
                     if (o.player === me.player) return;
-                    const d = o.avg - me.avg; // + : 상대가 더 많이 침 → 내가 받음
-                    if (d > 0) get.push({ who: o.player, amt: d * crBet.perStroke, d });
-                    else if (d < 0) pay.push({ who: o.player, amt: -d * crBet.perStroke, d: -d });
+                    const d = o.avg - me.avg; // + : 상대가 더 많이 침(핸디 높음) → 내가 지불, − : 상대가 더 잘 침 → 내가 받음
+                    if (d > 0) pay.push({ who: o.player, amt: d * crBet.perStroke, d });
+                    else if (d < 0) get.push({ who: o.player, amt: -d * crBet.perStroke, d: -d });
                 });
                 const getSum = get.reduce((a, x) => a + x.amt, 0), paySum = pay.reduce((a, x) => a + x.amt, 0);
-                return { me, get, pay, getSum, paySum, net: getSum - paySum };
+                return { me, get, pay, getSum, paySum, net: getSum - paySum, stake: crBet.pot + getSum - paySum };
             });
             const line = (arr, verb) => arr.length
                 ? arr.map(x => `<span class="jags-settle-chip">${x.who}${verb === 'get' ? '으로부터' : '에게'} ${won(x.amt)} <small>(${x.d}타)</small></span>`).join('')
                 : '<span class="text-[11px] text-slate-400">없음</span>';
             res.innerHTML = `
                 <div class="flex items-baseline justify-between gap-2 mb-2">
-                    <span class="text-sm font-bold text-white">플레이어별 판돈 (주고받는 금액 합산)</span>
-                    <span class="text-[11px] sm:text-xs text-slate-400">타수 차이 × ${won(crBet.perStroke)}</span>
+                    <span class="text-sm font-bold text-white">플레이어별 판돈</span>
+                    <span class="text-[11px] sm:text-xs text-slate-400">기본 ${won(crBet.pot)} ± 타수 차이 × ${won(crBet.perStroke)}</span>
                 </div>
                 <div class="space-y-2.5">${rows.map(r => `
                     <div class="jags-settle${r.me.player === selectedPlayer ? ' is-me' : ''}">
                         <div class="flex items-center justify-between gap-2">
                             <span class="flex items-center gap-2 font-bold text-white text-sm"><span class="jags-dot" style="background:${r.me.color}"></span>${r.me.player}${r.me.player === selectedPlayer ? ' <span class="text-[10px] text-slate-400 font-normal">(나)</span>' : ''}<span class="text-[11px] text-slate-400 font-normal">평균 ${r.me.avg}타</span></span>
-                            <span class="jags-stake-amt" style="color:${r.net > 0 ? '#1F6B47' : (r.net < 0 ? '#2F5F8A' : 'inherit')}">${r.net > 0 ? '+' : (r.net < 0 ? '−' : '')}${crBetFmt(Math.abs(r.net))}<small style="font-size:0.75rem;margin-left:2px;font-family:'IBM Plex Sans KR',sans-serif">원</small></span>
+                            <span class="text-right"><span class="jags-stake-amt">${crBetFmt(r.stake)}<small style="font-size:0.75rem;margin-left:2px;font-family:'IBM Plex Sans KR',sans-serif">원</small></span>
+                                <span class="block text-[11px] font-semibold" style="color:${r.net > 0 ? '#1F6B47' : (r.net < 0 ? '#2F5F8A' : '#6B7266')}">${won(crBet.pot)} ${r.net > 0 ? '+' : (r.net < 0 ? '−' : '±')} ${won(Math.abs(r.net))}</span></span>
                         </div>
                         <div class="jags-settle-line"><b>받는 금액</b> <span class="text-slate-400">합계 ${won(r.getSum)}</span><div>${line(r.get, 'get')}</div></div>
                         <div class="jags-settle-line"><b>주는 금액</b> <span class="text-slate-400">합계 ${won(r.paySum)}</span><div>${line(r.pay, 'pay')}</div></div>
                     </div>`).join('')}</div>
-                <p class="text-[11px] text-slate-400 mt-2">오른쪽 큰 금액은 받는 금액 − 주는 금액의 합계이며, 5명의 합계는 항상 0원입니다.</p>`;
+                <p class="text-[11px] text-slate-400 mt-2">핸디가 낮은 선수가 높은 선수에게 타수 차이만큼 지불합니다. 오른쪽 금액은 기본 판돈에 받는 금액을 더하고 주는 금액을 뺀 값이고, 5명의 판돈 합계는 항상 ${won(crBet.pot * rows.length)}입니다.</p>`;
         }
 
         function crInitBetSetup() {
