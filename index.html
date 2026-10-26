@@ -6431,19 +6431,28 @@
 
             const res = document.getElementById('crBetResult');
             if (!crBet.applied) {
-                res.innerHTML = '<p class="text-[11px] sm:text-xs text-slate-400">금액을 정하고 <b>적용</b>을 누르면 플레이어별 시작 판돈이 표시됩니다.</p>';
+                res.innerHTML = '<p class="text-[11px] sm:text-xs text-slate-400">1타당 금액을 정하고 <b>적용</b>을 누르면 플레이어별 시작 판돈(타수 차이 × 1타당 금액)이 표시됩니다.</p>';
                 return;
             }
-            const total = crBet.pot * PLAYERS.length;
+            // 시작 판돈 = 스크래치 게임의 타수 차이 × 1타당 금액. 스크래치(0타) 선수는 0원이고,
+            // 타수 차이는 위 순위표와 같은 값(선택 라운드 포함 직전 5회 평균을 정수로 반올림한 뒤 뺀 값)입니다.
+            const standings = crGetGameStandings().sort((a, b) => a.rawAvg - b.rawAvg);
+            if (!standings.length) {
+                res.innerHTML = '<p class="text-[11px] sm:text-xs text-slate-400">선택 라운드까지 총타수가 기록된 동호회원이 없어 계산할 수 없습니다.</p>';
+                return;
+            }
             res.innerHTML = `
                 <div class="flex items-baseline justify-between gap-2 mb-1">
                     <span class="text-sm font-bold text-white">플레이어별 시작 판돈</span>
-                    <span class="text-[11px] sm:text-xs text-slate-400">1타당 ${crBetFmt(crBet.perStroke)}원 · 총 판돈 ${crBetFmt(total)}원</span>
+                    <span class="text-[11px] sm:text-xs text-slate-400">타수 차이 × ${crBetFmt(crBet.perStroke)}원</span>
                 </div>
-                <div>${PLAYERS.map((p, i) => `
+                <div>${standings.map(s => `
                     <div class="jags-stake-row">
-                        <span class="flex items-center gap-2 font-bold text-white text-sm"><span class="jags-dot" style="background:${playerLineColor(p, i)}"></span>${p}${p === selectedPlayer ? ' <span class="text-[10px] text-slate-400 font-normal">(나)</span>' : ''}</span>
-                        <span class="jags-stake-amt">${crBetFmt(crBet.pot)}<small style="font-size:0.75rem;margin-left:2px;font-family:'IBM Plex Sans KR',sans-serif">원</small></span>
+                        <span class="min-w-0">
+                            <span class="flex items-center gap-2 font-bold text-white text-sm"><span class="jags-dot" style="background:${s.color}"></span>${s.player}${s.player === selectedPlayer ? ' <span class="text-[10px] text-slate-400 font-normal">(나)</span>' : ''}</span>
+                            <span class="block text-[11px] text-slate-400 mt-0.5">${s.diff === 0 ? '스크래치' : `타수 차이 ${s.diff}타`}${s.diff === 0 ? '' : ` × ${crBetFmt(crBet.perStroke)}원`}</span>
+                        </span>
+                        <span class="jags-stake-amt">${crBetFmt(s.diff * crBet.perStroke)}<small style="font-size:0.75rem;margin-left:2px;font-family:'IBM Plex Sans KR',sans-serif">원</small></span>
                     </div>`).join('')}</div>`;
         }
 
