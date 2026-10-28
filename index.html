@@ -4362,7 +4362,8 @@
                     delta = fit.slope * (k - 1);
                 }
                 const firstCount = r.filter(v => v === 1).length;
-                traits[p] = { best, avg, sd, season, delta, k, firstCount, last: r[n - 1] };
+                const recentAvg = tail.reduce((a, b) => a + b, 0) / k; // 최근 5회(기록이 적으면 있는 만큼) 평균 순위
+                traits[p] = { best, avg, sd, season, delta, k, firstCount, recentAvg, last: r[n - 1] };
             });
             return traits;
         }
@@ -4377,7 +4378,13 @@
                 const t = traits[p];
                 valid[p] = new Set();
                 const add = (nick, score, why) => { cands.push({ p, nick, score, why }); valid[p].add(nick); };
-                if (t.best >= 3) add('붙박이 챔피언', (t.best / n) * 10 + 2, `최장 ${t.best}회 연속 1위`);
+                // 연속 1위 기록이 있는 선수: 최근 5회 평균 순위가 1.5위 이내면 지금도 왕좌에 있는 "붙박이 챔피언",
+                // 그보다 밀렸으면 과거 기록만 남은 "전직 챔피언"입니다. 둘은 동시에 성립하지 않아서,
+                // 조건이 바뀌면 예전 닉네임이 유효하지 않게 되어 연혁에서 바로 다음 닉네임으로 넘어갑니다.
+                if (t.best >= 3) {
+                    if (t.recentAvg <= RANK_FLOW_CHAMP_RECENT) add('붙박이 챔피언', (t.best / n) * 10 + 2, `최장 ${t.best}회 연속 1위`);
+                    else add('전직 챔피언', (t.best / n) * 10 + 2, `최장 ${t.best}회 연속 1위였지만 최근 ${t.k}회 평균 ${t.recentAvg.toFixed(1)}위`);
+                }
                 const seasons = Object.keys(t.season).filter(sn => t.season[sn] != null);
                 if (seasons.length >= 2) {
                     const bestSn = seasons.reduce((a, b) => (t.season[a] <= t.season[b] ? a : b));
@@ -4425,6 +4432,7 @@
         // 저장된 값이 아니라 기록에서 매번 계산한 결과이고, 카드의 현재 닉네임도 이 결과의 마지막 값입니다.
         // "최근 추세"를 나타내는 닉네임은 지금 상태를 바로 보여줘야 하므로 2회 확인을 기다리지 않고 즉시 반영합니다
         // (그렇지 않으면 순위가 오르고 있는데 한두 회차 동안 "내리막의 승부사"가 남아 코멘트와 어긋납니다).
+        const RANK_FLOW_CHAMP_RECENT = 1.5; // 이 평균 순위(최근 5회) 이내여야 "붙박이 챔피언"
         const RANK_FLOW_TREND_NICKS = ['후반기 로켓', '내리막의 승부사'];
         const RANK_FLOW_FALLBACK_NICKS = ['묵묵한 완주자', '숨은 복병', '조용한 추격자', '필드의 나그네', '느긋한 산책가'];
 
