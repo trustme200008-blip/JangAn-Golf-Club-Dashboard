@@ -4363,7 +4363,7 @@
                 }
                 const firstCount = r.filter(v => v === 1).length;
                 const recentAvg = tail.reduce((a, b) => a + b, 0) / k; // 최근 5회(기록이 적으면 있는 만큼) 평균 순위
-                traits[p] = { best, avg, sd, season, delta, k, firstCount, recentAvg, last: r[n - 1] };
+                traits[p] = { best, avg, sd, season, delta, k, firstCount, recentAvg, curSeason: rankFlowSeason(DATES[end]), last: r[n - 1] };
             });
             return traits;
         }
@@ -4382,7 +4382,8 @@
                 // 그보다 밀렸으면 과거 기록만 남은 "전직 챔피언"입니다. 둘은 동시에 성립하지 않아서,
                 // 조건이 바뀌면 예전 닉네임이 유효하지 않게 되어 연혁에서 바로 다음 닉네임으로 넘어갑니다.
                 if (t.best >= 3) {
-                    if (t.recentAvg <= RANK_FLOW_CHAMP_RECENT) add('붙박이 챔피언', (t.best / n) * 10 + 2, `최장 ${t.best}회 연속 1위`);
+                    // 자격을 갖추면 점수 경쟁 없이 최우선(+100)으로 "붙박이 챔피언"을 답니다. 지금도 왕좌에 있다는 가장 강한 근거이기 때문입니다.
+                    if (t.recentAvg <= RANK_FLOW_CHAMP_RECENT) add('붙박이 챔피언', (t.best / n) * 10 + 2 + 100, `최장 ${t.best}회 연속 1위, 최근 ${t.k}회 평균 ${t.recentAvg.toFixed(1)}위로 지금도 상위권`);
                     else add('전직 챔피언', (t.best / n) * 10 + 2, `최장 ${t.best}회 연속 1위였지만 최근 ${t.k}회 평균 ${t.recentAvg.toFixed(1)}위`);
                 }
                 const seasons = Object.keys(t.season).filter(sn => t.season[sn] != null);
@@ -4390,13 +4391,14 @@
                     const bestSn = seasons.reduce((a, b) => (t.season[a] <= t.season[b] ? a : b));
                     const others = seasons.filter(sn => sn !== bestSn);
                     const gap = others.reduce((a, sn) => a + t.season[sn], 0) / others.length - t.season[bestSn];
-                    if (gap >= 0.6) {
+                    // 계절 닉네임은 그 계절이 진행 중일 때만 붙입니다(여름이 지난 가을에 "여름의 지배자"가 남지 않도록).
+                    if (gap >= 0.6 && t.curSeason === bestSn) {
                         const nick = { spring: '봄바람 스나이퍼', summer: '여름의 지배자', autumn: '가을 승부사' }[bestSn];
                         add(nick, gap * 3, `${RANK_FLOW_SEASON_LABEL[bestSn]} 평균 ${t.season[bestSn].toFixed(1)}위로 가장 강했음`);
                     }
                     if (t.season.summer != null) {
                         const rest = seasons.filter(sn => sn !== 'summer');
-                        if (rest.length) {
+                        if (rest.length && t.curSeason === 'summer') {
                             const restAvg = rest.reduce((a, sn) => a + t.season[sn], 0) / rest.length;
                             const slump = t.season.summer - restAvg;
                             if (slump >= 0.8) add('더위 먹은 에이스', slump * 3.2, `여름 평균 ${t.season.summer.toFixed(1)}위로 다른 계절(${restAvg.toFixed(1)}위)보다 부진`);
