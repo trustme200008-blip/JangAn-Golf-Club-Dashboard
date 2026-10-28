@@ -4372,9 +4372,11 @@
         // 선수당 닉네임 하나. 후보를 점수로 겨뤄 가장 두드러진 특성을 고르고, 같은 닉네임이 겹치지 않게 배정합니다.
         function rankFlowNicknames(traits, n) {
             const cands = [];
+            const valid = {}; // valid[p] = 지금 기록으로도 성립하는 닉네임 후보 집합 (연혁에서 "예전 닉네임이 아직 맞는지" 확인용)
             PLAYERS.forEach(p => {
                 const t = traits[p];
-                const add = (nick, score, why) => cands.push({ p, nick, score, why });
+                valid[p] = new Set();
+                const add = (nick, score, why) => { cands.push({ p, nick, score, why }); valid[p].add(nick); };
                 if (t.best >= 3) add('붙박이 챔피언', (t.best / n) * 10 + 2, `최장 ${t.best}회 연속 1위`);
                 const seasons = Object.keys(t.season).filter(sn => t.season[sn] != null);
                 if (seasons.length >= 2) {
@@ -4406,6 +4408,7 @@
                 result[c.p] = { nick: c.nick, why: c.why };
                 used.add(c.nick);
             });
+            result._valid = valid;
             PLAYERS.forEach(p => {
                 if (result[p]) return;
                 const t = traits[p];
@@ -4420,6 +4423,11 @@
         // 한 회차 결과만으로 닉네임이 오락가락하지 않도록, 새 닉네임이 **2회 연속** 나와야 바뀝니다
         // (바뀔 때 시작 시점은 처음 나타난 회차). 같은 닉네임이 이어진 구간은 하나로 묶습니다.
         // 저장된 값이 아니라 기록에서 매번 계산한 결과이고, 카드의 현재 닉네임도 이 결과의 마지막 값입니다.
+        // "최근 추세"를 나타내는 닉네임은 지금 상태를 바로 보여줘야 하므로 2회 확인을 기다리지 않고 즉시 반영합니다
+        // (그렇지 않으면 순위가 오르고 있는데 한두 회차 동안 "내리막의 승부사"가 남아 코멘트와 어긋납니다).
+        const RANK_FLOW_TREND_NICKS = ['후반기 로켓', '내리막의 승부사'];
+        const RANK_FLOW_FALLBACK_NICKS = ['묵묵한 완주자', '숨은 복병', '조용한 추격자', '필드의 나그네', '느긋한 산책가'];
+
         function rankFlowHistory(ranks, end) {
             const hist = {}, pend = {};
             PLAYERS.forEach(p => { hist[p] = []; pend[p] = null; });
@@ -4430,7 +4438,15 @@
                 PLAYERS.forEach(p => {
                     const list = hist[p], cur = list[list.length - 1], r = raw[p];
                     if (!cur) { list.push({ nick: r.nick, from: k, to: k, why: r.why }); return; }
-                    if (r.nick === cur.nick) { cur.to = k; cur.why = r.why; pend[p] = null; return; }
+                    const bothFallback = RANK_FLOW_FALLBACK_NICKS.includes(cur.nick) && RANK_FLOW_FALLBACK_NICKS.includes(r.nick);
+                    if (r.nick === cur.nick || bothFallback) { cur.to = k; if (r.nick === cur.nick) cur.why = r.why; pend[p] = null; return; }
+                    // 지금 기록으로는 더 이상 맞지 않는 닉네임(예: 순위가 올라가는데 "내리막의 승부사")은
+                    // 2회 확인을 기다리지 않고 바로 바꿉니다. 아직 맞는 닉네임을 다른 후보가 앞지를 때만 2회 연속을 요구합니다.
+                    if (RANK_FLOW_TREND_NICKS.includes(r.nick) || !raw._valid[p].has(cur.nick)) {
+                        list.push({ nick: r.nick, from: k, to: k, why: r.why });
+                        pend[p] = null;
+                        return;
+                    }
                     if (pend[p] && pend[p].nick === r.nick) { pend[p].count++; pend[p].why = r.why; }
                     else pend[p] = { nick: r.nick, count: 1, from: k, why: r.why };
                     if (pend[p].count >= 2) {
