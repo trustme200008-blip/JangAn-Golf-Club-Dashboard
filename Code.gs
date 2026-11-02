@@ -22,6 +22,10 @@
  *    - Players        : name  (신규 생성)
  *    - ScreenScoreCard: id, date, player, course, score  (스크린골프 스코어 카드, 신규 생성.
  *      날짜는 "YYYY-MM-DD" 전체 날짜를 그대로 저장합니다 — Rounds 탭의 "MM/DD"와 다르니 주의)
+ *    - DuesPayments   : date, player, amount  (동호회 회비 납부 — 월별·선수별 납부액. "date" 열에는
+ *      날짜가 아니라 "YYYY-MM" 월 문자열이 들어갑니다. 신규 생성)
+ *    - DuesLedger     : id, date, kind, item, amount, memo  (회비 지출 / 기타 수입 내역. kind는 "지출" 또는
+ *      "기타수입", date는 "YYYY-MM-DD". 신규 생성)
  *    - CourseGoals    : date, player, targetScore  (코스라운드 "연도별 평균 타수 비교"의 연간 목표
  *      타수, 신규 생성. CourseRounds와 같은 date+player upsert 로직을 그대로 재사용하려고
  *      "date" 열 이름을 그대로 썼지만, 실제로 들어가는 값은 날짜가 아니라 연도(예: "2026")입니다.
@@ -39,12 +43,19 @@
 // 재배포해주세요. 조회(doGet)는 토큰 없이도 계속 누구나 가능합니다(화면 표시용이라 필요).
 const ADMIN_TOKEN = '0243';
 
+// 동호회 회비(DuesPayments / DuesLedger) 쓰기 요청은 관리자 토큰이 아니라 이 "회비 총무 전용" 토큰이 와야 처리됩니다.
+// index.html의 DUES_PIN과 반드시 같은 값이어야 합니다 — 바꾸면 양쪽을 같이 바꾸고 재배포해주세요.
+// 조회(doGet)는 토큰 없이 누구나 가능합니다(회원 모두 현황을 볼 수 있게 하려는 의도입니다).
+const DUES_TOKEN = '7391';
+
 const SHEET_NAMES = {
   screenGolf: 'Rounds',
   courseRounds: 'CourseRounds',
   players: 'Players',
   screenScoreCard: 'ScreenScoreCard',
-  courseGoals: 'CourseGoals'
+  courseGoals: 'CourseGoals',
+  duesPayments: 'DuesPayments',
+  duesLedger: 'DuesLedger'
 };
 
 const DEFAULT_HEADERS = {
@@ -56,8 +67,14 @@ const DEFAULT_HEADERS = {
   // 별도 함수 없이 여기 등록만 하면 동작합니다. 'date' 열에는 연도 문자열(예: "2026")이 들어가고,
   // getDateNormalizer가 courseRounds가 아닌 타입은 normalizeDateCell을 쓰는데 이 함수는
   // "YYYY-MM-DD" 형태만 변환하고 "2026" 같은 순수 연도 문자열은 그대로 통과시키므로 문제없습니다.
-  courseGoals: ['date', 'player', 'targetScore']
+  courseGoals: ['date', 'player', 'targetScore'],
+  duesPayments: ['date', 'player', 'amount'],
+  duesLedger: ['id', 'date', 'kind', 'item', 'amount', 'memo']
 };
+
+function isDuesType(type) {
+  return type === 'duesPayments' || type === 'duesLedger';
+}
 
 function doGet(e) {
   const type = (e && e.parameter && e.parameter.type) || 'screenGolf';
@@ -73,20 +90,23 @@ function doPost(e) {
   // 쓰기 요청은 전부 토큰 검증을 거칩니다. 프론트엔드가 관리자 PIN을 확인한 경우에만
   // 이 토큰을 실어 보내므로, PIN을 모르는 상태로 API를 직접 호출해 데이터를 추가/삭제하는
   // 것을 막습니다. (완전한 인증은 아니지만, 화면의 관리자 PIN 잠금을 서버 쪽에서도 강제합니다.)
-  if (body.token !== ADMIN_TOKEN) {
-    return jsonResponse({ status: 'error', message: '인증 실패: 관리자 토큰이 올바르지 않습니다.' });
+  const expectedToken = isDuesType(type) ? DUES_TOKEN : ADMIN_TOKEN;
+  if (body.token !== expectedToken) {
+    return jsonResponse({ status: 'error', message: isDuesType(type)
+      ? '인증 실패: 회비 총무 PIN이 올바르지 않습니다.'
+      : '인증 실패: 관리자 토큰이 올바르지 않습니다.' });
   }
 
   if (body.action === 'delete') {
-    if (type === 'screenScoreCard') {
-      deleteScoreCardRecord(body.id);
+    if (type === 'screenScoreCard' || type === 'duesLedger') {
+      deleteScoreCardRecord(body.id, type);
     } else {
       deleteRoundRecords(type, body.date);
     }
   } else if (type === 'players') {
     savePlayers(body.players || []);
-  } else if (type === 'screenScoreCard') {
-    appendScoreCardRecords(body.records || []);
+  } else if (type === 'screenScoreCard' || type === 'duesLedger') {
+    appendScoreCardRecords(body.records || [], type);
   } else {
     saveRoundRecords(type, body.date, body.records || []);
   }
@@ -225,7 +245,20 @@ function normalizeCourseRoundDateCell(value) {
 // screenGolf(Rounds)는 지금도 "MM/DD"만 씁니다. courseRounds만 연도 선택 기능 때문에
 // "YYYY-MM-DD" 전체 날짜를 씁니다(과거 "MM/DD" 기록은 자동으로 2026년으로 치유됩니다).
 function getDateNormalizer(type) {
+  if (type === 'duesPayments') return normalizeMonthCell;
   return type === 'courseRounds' ? normalizeCourseRoundDateCell : normalizeDateCell;
+}
+
+// 회비 납부는 "YYYY-MM" 월 문자열을 date 열에 씁니다. 구글 시트가 이를 실제 날짜로 바꿔버린 경우도
+// "YYYY-MM"으로 되돌려 비교가 어긋나지 않게 합니다.
+function normalizeMonthCell(value) {
+  if (value instanceof Date) {
+    return value.getUTCFullYear() + '-' + ('0' + (value.getUTCMonth() + 1)).slice(-2);
+  }
+  let str = String(value).trim();
+  if (str.charAt(0) === "'") str = str.slice(1);
+  const m = str.match(/^(\d{4})-(\d{1,2})/);
+  return m ? m[1] + '-' + ('0' + m[2]).slice(-2) : str;
 }
 
 // date + player 조합이 이미 있으면 해당 행을 덮어쓰고, 없으면 새 행을 추가합니다.
@@ -298,8 +331,9 @@ function deleteRoundRecords(type, date) {
 // 새 행으로 추가만 합니다(덮어쓰기 없음). 각 record는 프론트엔드에서 만든 고유 id를 포함합니다.
 // records에 overPar처럼 시트에 아직 없는 새 필드가 오면 ensureColumns가 열을 자동으로 추가합니다
 // (COURSE_METRICS 확장과 동일한 방식) — 그래서 이미 만들어진 시트에도 재배포 없이 반영됩니다.
-function appendScoreCardRecords(records) {
-  const sheet = getOrCreateSheet('screenScoreCard');
+function appendScoreCardRecords(records, type) {
+  type = type || 'screenScoreCard';
+  const sheet = getOrCreateSheet(type);
   ensureColumns(sheet, records);
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
   ensureDateColumnAsText(sheet, headers, normalizeFullDateCell);
@@ -314,8 +348,8 @@ function appendScoreCardRecords(records) {
 }
 
 // id로 스코어 카드 행 하나를 삭제합니다. 되돌릴 수 없습니다.
-function deleteScoreCardRecord(id) {
-  const sheet = getOrCreateSheet('screenScoreCard');
+function deleteScoreCardRecord(id, type) {
+  const sheet = getOrCreateSheet(type || 'screenScoreCard');
   const values = sheet.getDataRange().getValues();
   if (values.length < 2) return;
   const headers = values[0].map(h => String(h).trim());

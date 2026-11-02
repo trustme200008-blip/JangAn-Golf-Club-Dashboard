@@ -184,6 +184,18 @@
         .jags-settle-chip small { color: #6B7266; font-weight: 400; }
         html:not(.light) .jags-settle { background: #16241D; border-color: #2A3B31; } html:not(.light) .jags-settle.is-me { border-color: #8FBF9F; box-shadow: inset 3px 0 0 #8FBF9F; }
         html:not(.light) .jags-settle-line { color: #C9D2C4; } html:not(.light) .jags-settle-chip { background: #22342A; color: #E7ECE4; }
+        /* ===== 동호회 회비 ===== */
+        body.dues-mode #headerPlayerSelect, body.dues-mode #openAddModalBtnMobile, body.dues-mode #openEditModalBtnMobile { display: none !important; }
+        .jags-bignum { font-family: 'Barlow Condensed', 'IBM Plex Sans KR', sans-serif; font-variant-numeric: tabular-nums; font-weight: 600; letter-spacing: -0.01em; line-height: 1; }
+        .dues-table th, .dues-table td { padding: 8px 10px; white-space: nowrap; }
+        .dues-table th:first-child, .dues-table td:first-child { position: sticky; left: 0; text-align: left; z-index: 1; background: var(--panel); }
+        .dues-table thead th { color: var(--muted); font-weight: 600; font-size: 0.72rem; }
+        .dues-paid { background: rgba(31, 77, 58, 0.10); color: var(--fairway); font-weight: 700; }
+        .dues-miss { color: #9AA294; }
+        .dues-total-row td { font-weight: 700; border-top: 2px solid var(--line); }
+        html:not(.light) .dues-table th:first-child, html:not(.light) .dues-table td:first-child { background: #16241D; }
+        html:not(.light) .dues-paid { background: rgba(143, 191, 159, 0.14); color: #8FBF9F; }
+        html:not(.light) .dues-total-row td { border-color: #2A3B31; }
         .jags-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
 
         /* ---------- 주간(기본) ---------- */
@@ -313,7 +325,7 @@
             </div>
             
             <!-- Quick Player Selector Pills -->
-            <div class="overflow-x-auto touch-scroll custom-scrollbar pb-1 md:pb-0">
+            <div id="headerPlayerSelect" class="overflow-x-auto touch-scroll custom-scrollbar pb-1 md:pb-0">
                 <div class="flex items-center gap-2 min-w-max">
                     <span class="text-xs sm:text-sm font-bold text-slate-400 shrink-0 flex items-center gap-1.5">
                         <span class="inline-block align-[-0.25em] shrink-0" style="width:1.9em;height:1.9em;background-color:#059669;-webkit-mask-image:url('data:image/png;base64,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');mask-image:url('data:image/png;base64,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');-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;"></span>
@@ -335,6 +347,9 @@
             </button>
             <button id="categoryCourseBtn" onclick="setCategory('courseRound')" class="shrink-0 whitespace-nowrap flex-1 px-4 py-2.5 rounded-lg font-bold transition text-slate-400 hover:text-white text-center">
                 <svg class="inline-block align-[-0.15em] shrink-0 mr-1" style="width:1.1em;height:1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><line x1="12" y1="13" x2="12" y2="20"/><line x1="8" y1="20" x2="16" y2="20"/></svg> 코스라운드
+            </button>
+            <button id="categoryDuesBtn" onclick="setCategory('dues')" class="shrink-0 whitespace-nowrap flex-1 px-4 py-2.5 rounded-lg font-bold transition text-slate-400 hover:text-white text-center">
+                <svg class="inline-block align-[-0.15em] shrink-0 mr-1" style="width:1.1em;height:1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg> 회비
             </button>
         </div>
     </div>
@@ -1650,6 +1665,172 @@
         </div>
     </main>
 
+    <!-- 동호회 회비: 납부 현황 · 지출 (조회는 모두, 입력은 회비 총무 PIN) -->
+    <main id="mainDues" class="hidden max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 space-y-4 sm:space-y-6">
+        <div class="glass-panel p-3.5 sm:p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <select id="duesYearSelect" class="w-full sm:w-auto bg-slate-900 border border-slate-700 text-emerald-300 text-xs sm:text-sm font-bold rounded-xl px-3 py-2 focus:outline-none cursor-pointer"></select>
+            <div class="flex overflow-x-auto bg-slate-900/90 p-1 rounded-xl border border-slate-700/60 text-xs gap-1 sm:w-auto w-full">
+                <button id="duesTabOverview" type="button" class="shrink-0 whitespace-nowrap flex-1 px-4 py-2 rounded-lg font-bold transition bg-emerald-500 text-slate-950 text-center">전체 현황</button>
+                <button id="duesTabManage" type="button" class="shrink-0 whitespace-nowrap flex-1 px-4 py-2 rounded-lg font-bold transition text-slate-400 hover:text-white text-center">입력 · 관리 (총무)</button>
+            </div>
+        </div>
+
+        <div id="duesNotice" class="hidden text-xs sm:text-sm text-amber-300 bg-amber-950/30 border border-amber-500/20 rounded-xl px-3.5 py-3 leading-relaxed"></div>
+
+        <!-- 전체 현황 -->
+        <div id="duesViewOverview" class="space-y-4 sm:space-y-6">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div class="glass-panel p-4 sm:p-5 rounded-2xl border-l-4 border-l-emerald-500">
+                    <span class="text-xs font-medium text-slate-400">현재 잔액</span>
+                    <div id="duesCardBalance" class="jags-bignum text-2xl sm:text-3xl font-extrabold text-white mt-2">-</div>
+                    <p class="text-[10px] sm:text-[11px] text-slate-400 mt-2">전체 기간 누적</p>
+                </div>
+                <div class="glass-panel p-4 sm:p-5 rounded-2xl border-l-4 border-l-blue-500">
+                    <span class="text-xs font-medium text-slate-400"><span class="duesYearText"></span> 수입</span>
+                    <div id="duesCardIn" class="jags-bignum text-2xl sm:text-3xl font-extrabold text-white mt-2">-</div>
+                    <p id="duesCardInSub" class="text-[10px] sm:text-[11px] text-slate-400 mt-2">-</p>
+                </div>
+                <div class="glass-panel p-4 sm:p-5 rounded-2xl border-l-4 border-l-amber-500">
+                    <span class="text-xs font-medium text-slate-400"><span class="duesYearText"></span> 지출</span>
+                    <div id="duesCardOut" class="jags-bignum text-2xl sm:text-3xl font-extrabold text-white mt-2">-</div>
+                    <p id="duesCardOutSub" class="text-[10px] sm:text-[11px] text-slate-400 mt-2">-</p>
+                </div>
+                <div class="glass-panel p-4 sm:p-5 rounded-2xl border-l-4 border-l-teal-500">
+                    <span class="text-xs font-medium text-slate-400">최근 납부 현황</span>
+                    <div id="duesCardPaid" class="jags-bignum text-2xl sm:text-3xl font-extrabold text-white mt-2">-</div>
+                    <p id="duesCardPaidSub" class="text-[10px] sm:text-[11px] text-slate-400 mt-2">-</p>
+                </div>
+            </div>
+
+            <div class="glass-panel p-4 sm:p-6 rounded-2xl">
+                <h3 class="text-base sm:text-lg font-bold text-white mb-1">월별 수입 · 지출 · 잔액</h3>
+                <p class="text-[11px] sm:text-xs text-slate-400 mb-4">막대는 그 달의 수입과 지출, 선은 월말 누적 잔액입니다.</p>
+                <div class="h-64 sm:h-80 w-full relative"><canvas id="duesChart"></canvas></div>
+            </div>
+
+            <div class="glass-panel p-4 sm:p-6 rounded-2xl">
+                <h3 class="text-base sm:text-lg font-bold text-white mb-1">월별 납부 현황</h3>
+                <p class="text-[11px] sm:text-xs text-slate-400 mb-3">선수별로 낸 금액입니다. 빈 칸은 아직 내지 않은 달입니다. 옆으로 밀어서 볼 수 있습니다.</p>
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="dues-table w-full text-xs sm:text-sm text-right border-collapse" style="min-width:760px">
+                        <thead id="duesGridHead"></thead>
+                        <tbody id="duesGridBody" class="divide-y divide-slate-800"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="glass-panel p-4 sm:p-6 rounded-2xl">
+                <h3 class="text-base sm:text-lg font-bold text-white mb-3">월별 요약</h3>
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-xs sm:text-sm text-right" style="min-width:480px">
+                        <thead class="text-slate-400"><tr>
+                            <th class="p-2.5 text-left">월</th><th class="p-2.5">납부</th><th class="p-2.5">기타 수입</th><th class="p-2.5">지출</th><th class="p-2.5">월말 잔액</th>
+                        </tr></thead>
+                        <tbody id="duesMonthBody" class="divide-y divide-slate-800"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="glass-panel p-4 sm:p-6 rounded-2xl">
+                <h3 class="text-base sm:text-lg font-bold text-white mb-1">지출 · 기타 수입 내역</h3>
+                <p class="text-[11px] sm:text-xs text-slate-400 mb-3">회비 납부 외에 입력된 항목입니다.</p>
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-xs sm:text-sm text-left" style="min-width:520px">
+                        <thead class="text-slate-400"><tr>
+                            <th class="p-2.5">날짜</th><th class="p-2.5">구분</th><th class="p-2.5">항목</th><th class="p-2.5 text-right">금액</th><th class="p-2.5">메모</th>
+                        </tr></thead>
+                        <tbody id="duesLedgerBody" class="divide-y divide-slate-800"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 입력 · 관리 (총무 전용) -->
+        <div id="duesViewManage" class="hidden space-y-4 sm:space-y-6">
+            <div id="duesLockBox" class="glass-panel p-5 sm:p-6 rounded-2xl max-w-md">
+                <h3 class="text-base font-bold text-white mb-1">회비 총무 확인</h3>
+                <p class="text-xs text-slate-400 mb-4">회비 입력은 총무(<span id="duesTreasurerName">혁</span>)만 할 수 있습니다. 총무 전용 PIN을 입력하세요.</p>
+                <form id="duesPinForm" class="flex gap-2">
+                    <input id="duesPinInput" type="tel" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" maxlength="8" placeholder="총무 PIN" class="flex-1 min-w-0 bg-slate-900 border border-slate-700 text-white rounded-xl p-2.5 text-sm focus:border-emerald-500 focus:outline-none">
+                    <button type="submit" class="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-sm transition">확인</button>
+                </form>
+                <p id="duesPinError" class="hidden text-xs text-amber-300 mt-2">PIN이 올바르지 않습니다.</p>
+            </div>
+
+            <div id="duesManageBox" class="hidden space-y-4 sm:space-y-6">
+                <div class="flex items-center justify-between gap-3">
+                    <span class="text-xs sm:text-sm text-slate-300">총무 <b class="text-white" id="duesTreasurerName2">혁</b> 입력 모드</span>
+                    <button id="duesLockBtn" type="button" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700/60 rounded-xl text-xs font-semibold text-slate-200 transition">잠그기</button>
+                </div>
+                <p id="duesMsg" class="hidden text-xs sm:text-sm rounded-xl px-3.5 py-2.5"></p>
+
+                <div class="glass-panel p-4 sm:p-6 rounded-2xl">
+                    <h3 class="text-base sm:text-lg font-bold text-white mb-1">회비 납부 입력</h3>
+                    <p class="text-[11px] sm:text-xs text-slate-400 mb-4">월을 고르고 선수별로 낸 금액을 입력한 뒤 저장하세요. 비워 두거나 0이면 미납입니다.</p>
+                    <div class="flex flex-col sm:flex-row sm:items-end gap-3 mb-4">
+                        <div class="flex-1">
+                            <label class="block text-[11px] text-slate-400 mb-1" for="duesPayMonth">납부 월</label>
+                            <input id="duesPayMonth" type="month" class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl p-2.5 text-sm focus:border-emerald-500 focus:outline-none">
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-[11px] text-slate-400 mb-1" for="duesQuickAmt">같은 금액으로 한 번에 채우기 (원)</label>
+                            <div class="flex gap-2">
+                                <input id="duesQuickAmt" type="number" inputmode="numeric" min="0" placeholder="예: 30000" class="flex-1 min-w-0 bg-slate-900 border border-slate-700 text-white rounded-xl p-2.5 text-sm focus:border-emerald-500 focus:outline-none">
+                                <button id="duesQuickBtn" type="button" class="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700/60 rounded-xl text-xs font-semibold text-slate-200 transition whitespace-nowrap">전원 채우기</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="duesPayInputs" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-4"></div>
+                    <button id="duesPaySaveBtn" type="button" class="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-sm transition active:scale-95">납부 저장</button>
+                </div>
+
+                <div class="glass-panel p-4 sm:p-6 rounded-2xl">
+                    <h3 class="text-base sm:text-lg font-bold text-white mb-1">지출 · 기타 수입 입력</h3>
+                    <p class="text-[11px] sm:text-xs text-slate-400 mb-4">경기 후 식대, 상품 구입 같은 지출이나 이자·이월금 같은 기타 수입을 기록합니다.</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                        <div>
+                            <label class="block text-[11px] text-slate-400 mb-1" for="duesLedKind">구분</label>
+                            <select id="duesLedKind" class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl p-2.5 text-sm focus:border-emerald-500 focus:outline-none">
+                                <option value="지출">지출</option>
+                                <option value="기타수입">기타 수입</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-400 mb-1" for="duesLedDate">날짜</label>
+                            <input id="duesLedDate" type="date" class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl p-2.5 text-sm focus:border-emerald-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-400 mb-1" for="duesLedItem">항목</label>
+                            <input id="duesLedItem" type="text" maxlength="40" placeholder="예: 시상품 구입" class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl p-2.5 text-sm focus:border-emerald-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-400 mb-1" for="duesLedAmt">금액 (원)</label>
+                            <input id="duesLedAmt" type="number" inputmode="numeric" min="1" placeholder="예: 85000" class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl p-2.5 text-sm focus:border-emerald-500 focus:outline-none">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-[11px] text-slate-400 mb-1" for="duesLedMemo">메모 (선택)</label>
+                            <input id="duesLedMemo" type="text" maxlength="80" class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl p-2.5 text-sm focus:border-emerald-500 focus:outline-none">
+                        </div>
+                    </div>
+                    <button id="duesLedAddBtn" type="button" class="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-sm transition active:scale-95">내역 추가</button>
+                </div>
+
+                <div class="glass-panel p-4 sm:p-6 rounded-2xl">
+                    <h3 class="text-base sm:text-lg font-bold text-white mb-3">입력한 내역 (삭제 가능)</h3>
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-xs sm:text-sm text-left" style="min-width:520px">
+                            <thead class="text-slate-400"><tr>
+                                <th class="p-2.5">날짜</th><th class="p-2.5">구분</th><th class="p-2.5">항목</th><th class="p-2.5 text-right">금액</th><th class="p-2.5"></th>
+                            </tr></thead>
+                            <tbody id="duesManageLedgerBody" class="divide-y divide-slate-800"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+
     <!-- Admin PIN Modal -->
     <div id="adminPinModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-3 sm:p-4">
         <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-xs w-full p-5 sm:p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
@@ -2192,6 +2373,7 @@
                 renderRankFlow();
             }
 
+            if (typeof activeCategory !== 'undefined' && activeCategory === 'dues' && typeof duesRender === 'function') duesRender();
             // 코스라운드 쪽 차트도 열려있으면 함께 갱신
             if (typeof crActiveMode !== 'undefined') {
                 if (crActiveMode === 'compare' && typeof crRenderCompareChart === 'function') crRenderCompareChart();
@@ -2278,18 +2460,21 @@
             initScaleTableUI();
             initMultiTrendUI();
             initRankFlowUI();
+            initDuesUI();
 
             // 구글 시트 연동이 설정돼 있으면, 다른 플레이어/관리자가 추가해둔 데이터를 불러와 병합
             await loadPlayersFromSheet();
             await loadRoundsFromSheet();
             await loadCourseRoundsFromSheet();
             await loadCourseGoalsFromSheet();
+            await loadDuesFromSheet();
             await loadScoreCardFromSheet();
             selectedDateIndex = DATES.length - 1;
 
             renderDateDropdown();
             renderAll();
             crRenderAll();
+            if (activeCategory === 'dues') duesRender();
             renderScoreCard();
             startRoundPolling();
         };
@@ -4981,7 +5166,7 @@
 
         function initCategorySwitch() {
             const saved = localStorage.getItem('jangan_golf_active_category');
-            if (saved === 'courseRound' || saved === 'screenGolf') {
+            if (saved === 'courseRound' || saved === 'screenGolf' || saved === 'dues') {
                 setCategory(saved, true);
             }
         }
@@ -4989,24 +5174,374 @@
         function setCategory(category, skipSave) {
             activeCategory = category;
             const isScreen = category === 'screenGolf';
+            const isCourse = category === 'courseRound';
+            const isDues = category === 'dues';
 
             document.getElementById('mainScreenGolf').classList.toggle('hidden', !isScreen);
-            document.getElementById('mainCourseRound').classList.toggle('hidden', isScreen);
+            document.getElementById('mainCourseRound').classList.toggle('hidden', !isCourse);
+            document.getElementById('mainDues').classList.toggle('hidden', !isDues);
+            document.body.classList.toggle('dues-mode', isDues);
 
-            document.getElementById('categoryScreenBtn').className = 'shrink-0 whitespace-nowrap flex-1 px-4 py-2.5 rounded-lg font-bold transition text-center ' + (isScreen ? 'bg-emerald-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white');
-            document.getElementById('categoryCourseBtn').className = 'shrink-0 whitespace-nowrap flex-1 px-4 py-2.5 rounded-lg font-bold transition text-center ' + (!isScreen ? 'bg-emerald-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white');
+            const catCls = on => 'shrink-0 whitespace-nowrap flex-1 px-4 py-2.5 rounded-lg font-bold transition text-center ' + (on ? 'bg-emerald-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white');
+            document.getElementById('categoryScreenBtn').className = catCls(isScreen);
+            document.getElementById('categoryCourseBtn').className = catCls(isCourse);
+            document.getElementById('categoryDuesBtn').className = catCls(isDues);
 
             document.getElementById('pageSubText').textContent = isScreen
                 ? '스크린 골프 · 플레이어 퍼포먼스 분석'
-                : '코스라운드 · 실제 라운드 기록 분석';
+                : (isCourse ? '코스라운드 · 실제 라운드 기록 분석' : '동호회 회비 · 납부 현황과 지출');
 
             if (!skipSave) localStorage.setItem('jangan_golf_active_category', category);
 
             if (isScreen) {
                 renderAll();
-            } else {
+            } else if (isCourse) {
                 crRenderAll();
+            } else {
+                duesRender();
             }
+        }
+
+        // ============================================================
+        // ===== 동호회 회비 (납부 현황 · 지출) =====
+        // 조회는 회원 모두, 입력은 회비 총무 전용 PIN을 아는 사람만 합니다. 데이터는 구글 시트의
+        // DuesPayments(월·선수별 납부액)와 DuesLedger(지출/기타수입 내역) 탭에 저장됩니다.
+        // 주의: PIN은 정적 페이지 소스에 들어 있어 관리자 PIN과 마찬가지로 "잠금 표시" 수준입니다.
+        // ============================================================
+        const DUES_PIN = '7391'; // 회비 총무 전용 PIN. Code.gs의 DUES_TOKEN과 반드시 같아야 합니다.
+        const DUES_TREASURER = '혁';
+        const DUES_CACHE_KEY = 'jangan_golf_dues_cache_v1';
+        const DUES_SESSION_KEY = 'jangan_golf_dues_session_v1';
+        let DUES_PAY = {};     // DUES_PAY['2026-11'][선수] = 납부액
+        let DUES_LEDGER = [];  // { id, date:'YYYY-MM-DD', kind:'지출'|'기타수입', item, amount, memo }
+        let duesBackendReady = null; // null=확인 전, true=시트 연결됨, false=재배포 필요(쓰기 차단)
+        let duesToken = null;
+        let duesYear = null;
+        let duesTab = 'overview';
+        let duesChart = null;
+
+        const duesWon = n => `${Math.round(n).toLocaleString('ko-KR')}원`;
+        const duesEsc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        function duesCompact(n) { // 3만 / 2.5만 / 8,000
+            if (n >= 10000) { const m = n / 10000; return `${Number.isInteger(m) ? m : m.toFixed(1).replace(/\.0$/, '')}만`; }
+            return n.toLocaleString('ko-KR');
+        }
+        const duesPad = n => String(n).padStart(2, '0');
+        function duesNormMonth(v) { const m = String(v == null ? '' : v).trim().match(/^(\d{4})-(\d{1,2})/); return m ? `${m[1]}-${duesPad(m[2])}` : ''; }
+        function duesNormDate(v) { const m = String(v == null ? '' : v).trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})/); return m ? `${m[1]}-${duesPad(m[2])}-${duesPad(m[3])}` : ''; }
+        const duesSumPlayers = obj => Object.values(obj || {}).reduce((a, v) => a + (Number(v) > 0 ? Number(v) : 0), 0);
+
+        function duesLoadCache() {
+            try {
+                const c = JSON.parse(localStorage.getItem(DUES_CACHE_KEY) || 'null');
+                if (c && c.pay && Array.isArray(c.ledger)) { DUES_PAY = c.pay; DUES_LEDGER = c.ledger; }
+            } catch (err) { /* 캐시가 없거나 깨졌으면 빈 상태로 시작 */ }
+        }
+        function duesSaveCache() { try { localStorage.setItem(DUES_CACHE_KEY, JSON.stringify({ pay: DUES_PAY, ledger: DUES_LEDGER })); } catch (err) { /* 무시 */ } }
+
+        async function loadDuesFromSheet() {
+            if (!hasSheetBackend()) { duesBackendReady = false; return; }
+            try {
+                const t = Date.now();
+                const [r1, r2] = await Promise.all([
+                    fetch(`${SHEET_API_URL}?type=duesPayments&_=${t}`),
+                    fetch(`${SHEET_API_URL}?type=duesLedger&_=${t}`)
+                ]);
+                if (!r1.ok || !r2.ok) throw new Error('회비 조회 응답 오류');
+                const payRows = await r1.json(), ledRows = await r2.json();
+                // 아직 재배포되지 않은 Apps Script는 모르는 type을 스크린골프 Rounds 시트로 돌려보냅니다.
+                if ([...payRows, ...ledRows].some(r => 'gHandicap' in r)) { duesBackendReady = false; return; }
+                duesBackendReady = true;
+                const pay = {};
+                payRows.forEach(r => {
+                    const m = duesNormMonth(r.date), amt = parseFloat(r.amount);
+                    if (!m || !r.player || isNaN(amt)) return;
+                    (pay[m] = pay[m] || {})[r.player] = amt;
+                });
+                const ledger = [];
+                ledRows.forEach(r => {
+                    const d = duesNormDate(r.date), amt = parseFloat(r.amount);
+                    if (!r.id || !d || isNaN(amt)) return;
+                    ledger.push({ id: String(r.id), date: d, kind: r.kind === '기타수입' ? '기타수입' : '지출', item: sanitizeUserText(r.item), amount: amt, memo: sanitizeUserText(r.memo) });
+                });
+                DUES_PAY = pay; DUES_LEDGER = ledger;
+                duesSaveCache();
+            } catch (err) {
+                console.warn('회비 데이터를 구글 시트에서 불러오지 못해 이 브라우저에 저장된 값으로 표시합니다.', err);
+            }
+        }
+
+        async function duesPost(body) {
+            if (!hasSheetBackend()) return { ok: false, msg: '구글 시트 연동이 설정되어 있지 않습니다.' };
+            if (duesBackendReady !== true) return { ok: false, msg: '회비 시트가 아직 연결되지 않았습니다. Code.gs를 재배포한 뒤 새로고침해 주세요.' };
+            if (!duesToken) return { ok: false, msg: '총무 PIN을 먼저 입력해 주세요.' };
+            try {
+                const res = await fetch(SHEET_API_URL, {
+                    method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(Object.assign({}, body, { token: duesToken }))
+                });
+                const json = await res.json();
+                if (json && json.status === 'ok') return { ok: true };
+                return { ok: false, msg: (json && json.message) || '저장에 실패했습니다.' };
+            } catch (err) {
+                return { ok: false, msg: '네트워크 오류로 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.' };
+            }
+        }
+
+        function duesYears() {
+            const ys = new Set([String(new Date().getFullYear())]);
+            Object.keys(DUES_PAY).forEach(k => ys.add(k.slice(0, 4)));
+            DUES_LEDGER.forEach(e => ys.add(e.date.slice(0, 4)));
+            return Array.from(ys).sort();
+        }
+
+        // 선택 연도의 월별 집계. 잔액은 이전 연도까지의 누적(이월)에서 시작합니다.
+        function duesCompute(year) {
+            let opening = 0;
+            Object.keys(DUES_PAY).forEach(k => { if (k < `${year}-01`) opening += duesSumPlayers(DUES_PAY[k]); });
+            DUES_LEDGER.forEach(e => { if (e.date < `${year}-01-01`) opening += e.kind === '지출' ? -e.amount : e.amount; });
+            const months = [];
+            let bal = opening;
+            for (let m = 1; m <= 12; m++) {
+                const key = `${year}-${duesPad(m)}`;
+                const pay = duesSumPlayers(DUES_PAY[key]);
+                const other = DUES_LEDGER.filter(e => e.date.slice(0, 7) === key && e.kind === '기타수입').reduce((a, e) => a + e.amount, 0);
+                const out = DUES_LEDGER.filter(e => e.date.slice(0, 7) === key && e.kind === '지출').reduce((a, e) => a + e.amount, 0);
+                bal += pay + other - out;
+                months.push({ m, key, pay, other, out, bal, active: pay > 0 || other > 0 || out > 0 });
+            }
+            const totalAll = Object.keys(DUES_PAY).reduce((a, k) => a + duesSumPlayers(DUES_PAY[k]), 0)
+                + DUES_LEDGER.reduce((a, e) => a + (e.kind === '지출' ? -e.amount : e.amount), 0);
+            return { opening, months, balanceAll: totalAll,
+                yearIn: months.reduce((a, x) => a + x.pay + x.other, 0), yearPay: months.reduce((a, x) => a + x.pay, 0),
+                yearOther: months.reduce((a, x) => a + x.other, 0), yearOut: months.reduce((a, x) => a + x.out, 0) };
+        }
+
+        function duesRender() {
+            const sel = document.getElementById('duesYearSelect');
+            if (!sel) return;
+            const years = duesYears();
+            if (!duesYear || !years.includes(duesYear)) duesYear = years.includes(String(new Date().getFullYear())) ? String(new Date().getFullYear()) : years[years.length - 1];
+            sel.innerHTML = years.map(y => `<option value="${y}"${y === duesYear ? ' selected' : ''}>${y}년</option>`).join('');
+            document.querySelectorAll('.duesYearText').forEach(el => { el.textContent = `${duesYear}년`; });
+            document.getElementById('duesTreasurerName').textContent = DUES_TREASURER;
+            document.getElementById('duesTreasurerName2').textContent = DUES_TREASURER;
+
+            const notice = document.getElementById('duesNotice');
+            if (duesBackendReady === false) {
+                notice.classList.remove('hidden');
+                notice.textContent = hasSheetBackend()
+                    ? '회비 시트가 아직 연결되지 않아 이 브라우저에 저장된 값만 보입니다. Code.gs를 재배포하면 모든 회원에게 같은 현황이 보이고 입력도 가능해집니다.'
+                    : '구글 시트 연동이 설정되어 있지 않아 회비를 저장할 수 없습니다.';
+            } else notice.classList.add('hidden');
+
+            const onOverview = duesTab === 'overview';
+            document.getElementById('duesViewOverview').classList.toggle('hidden', !onOverview);
+            document.getElementById('duesViewManage').classList.toggle('hidden', onOverview);
+            const tabCls = on => 'shrink-0 whitespace-nowrap flex-1 px-4 py-2 rounded-lg font-bold transition text-center ' + (on ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white');
+            document.getElementById('duesTabOverview').className = tabCls(onOverview);
+            document.getElementById('duesTabManage').className = tabCls(!onOverview);
+
+            const c = duesCompute(duesYear);
+            // 요약 카드
+            document.getElementById('duesCardBalance').textContent = duesWon(c.balanceAll);
+            document.getElementById('duesCardIn').textContent = duesWon(c.yearIn);
+            document.getElementById('duesCardInSub').textContent = `납부 ${duesWon(c.yearPay)} · 기타 ${duesWon(c.yearOther)}`;
+            document.getElementById('duesCardOut').textContent = duesWon(c.yearOut);
+            const outCount = DUES_LEDGER.filter(e => e.kind === '지출' && e.date.startsWith(duesYear)).length;
+            document.getElementById('duesCardOutSub').textContent = outCount ? `${outCount}건` : '지출 내역 없음';
+            const lastPaid = c.months.filter(x => x.pay > 0).pop();
+            if (lastPaid) {
+                const paidN = PLAYERS.filter(p => (DUES_PAY[lastPaid.key] || {})[p] > 0).length;
+                document.getElementById('duesCardPaid').textContent = `${paidN}/${PLAYERS.length}명`;
+                const unpaid = PLAYERS.filter(p => !((DUES_PAY[lastPaid.key] || {})[p] > 0));
+                document.getElementById('duesCardPaidSub').textContent = `${lastPaid.m}월 기준` + (unpaid.length ? ` · 미납 ${unpaid.join(', ')}` : ' · 전원 납부');
+            } else {
+                document.getElementById('duesCardPaid').textContent = '-';
+                document.getElementById('duesCardPaidSub').textContent = '납부 기록 없음';
+            }
+
+            // 월별 납부 현황(선수 × 12개월)
+            document.getElementById('duesGridHead').innerHTML = '<tr><th>선수</th>' + c.months.map(x => `<th>${x.m}월</th>`).join('') + '<th>합계</th></tr>';
+            const rows = PLAYERS.map(p => {
+                let sum = 0;
+                const tds = c.months.map(x => {
+                    const v = Number((DUES_PAY[x.key] || {})[p]) || 0;
+                    sum += v;
+                    return v > 0 ? `<td class="dues-paid" title="${duesWon(v)}">${duesCompact(v)}</td>` : '<td class="dues-miss">·</td>';
+                }).join('');
+                return `<tr><td class="font-bold text-white">${duesEsc(p)}</td>${tds}<td class="font-bold">${duesWon(sum)}</td></tr>`;
+            }).join('');
+            const totalTds = c.months.map(x => `<td>${x.pay > 0 ? duesCompact(x.pay) : '·'}</td>`).join('');
+            document.getElementById('duesGridBody').innerHTML = rows + `<tr class="dues-total-row"><td>합계</td>${totalTds}<td>${duesWon(c.yearPay)}</td></tr>`;
+
+            // 월별 요약
+            const active = c.months.filter(x => x.active);
+            document.getElementById('duesMonthBody').innerHTML = active.length
+                ? active.map(x => `<tr><td class="p-2.5 text-left font-bold text-white">${x.m}월</td><td class="p-2.5">${duesWon(x.pay)}</td><td class="p-2.5">${x.other ? duesWon(x.other) : '-'}</td><td class="p-2.5">${x.out ? duesWon(x.out) : '-'}</td><td class="p-2.5 font-bold text-white">${duesWon(x.bal)}</td></tr>`).join('')
+                : '<tr><td colspan="5" class="p-4 text-center text-slate-400">이 해에는 아직 입력된 내역이 없습니다.</td></tr>';
+
+            // 내역
+            const yearLedger = DUES_LEDGER.filter(e => e.date.startsWith(duesYear)).sort((a, b) => (a.date < b.date ? 1 : -1));
+            const amtCell = e => e.kind === '지출' ? `<span style="color:#B3261E;font-weight:700">-${duesWon(e.amount)}</span>` : `<span style="color:#1F6B47;font-weight:700">+${duesWon(e.amount)}</span>`;
+            document.getElementById('duesLedgerBody').innerHTML = yearLedger.length
+                ? yearLedger.map(e => `<tr><td class="p-2.5 whitespace-nowrap">${e.date}</td><td class="p-2.5 whitespace-nowrap">${e.kind === '지출' ? '지출' : '기타 수입'}</td><td class="p-2.5">${duesEsc(e.item)}</td><td class="p-2.5 text-right whitespace-nowrap">${amtCell(e)}</td><td class="p-2.5 text-slate-400">${duesEsc(e.memo)}</td></tr>`).join('')
+                : '<tr><td colspan="5" class="p-4 text-center text-slate-400">지출·기타 수입 내역이 없습니다.</td></tr>';
+
+            duesRenderManage(yearLedger);
+            if (activeCategory === 'dues' && onOverview) duesRenderChart(c);
+        }
+
+        function duesRenderChart(c) {
+            const canvas = document.getElementById('duesChart');
+            if (!canvas) return;
+            if (!isChartJsLoaded()) { showChartFallback('duesChart'); return; }
+            const theme = chartColors();
+            if (duesChart) duesChart.destroy();
+            duesChart = new Chart(canvas.getContext('2d'), {
+                data: {
+                    labels: c.months.map(x => `${x.m}월`),
+                    datasets: [
+                        { type: 'bar', label: '수입', data: c.months.map(x => x.pay + x.other), backgroundColor: theme.accent, borderRadius: 3, order: 2 },
+                        { type: 'bar', label: '지출', data: c.months.map(x => x.out), backgroundColor: '#D2362C', borderRadius: 3, order: 2 },
+                        { type: 'line', label: '월말 잔액', data: c.months.map(x => x.bal), borderColor: '#C0932B', backgroundColor: '#C0932B', borderWidth: 2.5, pointRadius: 3, tension: 0.2, order: 1 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'top', labels: { color: theme.tick, font: { family: 'Noto Sans KR', weight: 'bold' }, boxWidth: 12 } },
+                        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${duesWon(ctx.parsed.y)}` } }
+                    },
+                    scales: {
+                        x: { ticks: { color: theme.tick }, grid: { display: false } },
+                        y: { beginAtZero: true, ticks: { color: theme.tick, callback: v => duesCompact(v) }, grid: { color: theme.grid } }
+                    }
+                }
+            });
+        }
+
+        // ----- 입력 · 관리 -----
+        function duesShowMsg(text, ok) {
+            const el = document.getElementById('duesMsg');
+            el.textContent = text;
+            el.classList.remove('hidden');
+            el.style.background = ok ? 'rgba(31, 77, 58, 0.12)' : 'rgba(210, 54, 44, 0.12)';
+            el.style.color = ok ? '#1F4D3A' : '#B3261E';
+        }
+
+        function duesRenderManage(yearLedger) {
+            const unlocked = !!duesToken;
+            document.getElementById('duesLockBox').classList.toggle('hidden', unlocked);
+            document.getElementById('duesManageBox').classList.toggle('hidden', !unlocked);
+            if (!unlocked) return;
+            duesFillPayInputs(false);
+            document.getElementById('duesManageLedgerBody').innerHTML = yearLedger.length
+                ? yearLedger.map(e => `<tr><td class="p-2.5 whitespace-nowrap">${e.date}</td><td class="p-2.5 whitespace-nowrap">${e.kind === '지출' ? '지출' : '기타 수입'}</td><td class="p-2.5">${duesEsc(e.item)}</td><td class="p-2.5 text-right whitespace-nowrap">${duesWon(e.amount)}</td><td class="p-2.5 text-right"><button type="button" data-dues-del="${duesEsc(e.id)}" class="btn-danger px-2.5 py-1 text-xs font-bold rounded-lg">삭제</button></td></tr>`).join('')
+                : '<tr><td colspan="5" class="p-4 text-center text-slate-400">입력한 내역이 없습니다.</td></tr>';
+        }
+
+        // 납부 입력칸을 선택한 월의 저장값으로 채웁니다. keepTyped=true면 사용자가 입력 중인 값을 유지합니다.
+        function duesFillPayInputs(keepTyped) {
+            const box = document.getElementById('duesPayInputs');
+            const month = document.getElementById('duesPayMonth').value;
+            const prev = {};
+            if (keepTyped) box.querySelectorAll('input[data-dues-player]').forEach(i => { prev[i.dataset.duesPlayer] = i.value; });
+            const saved = DUES_PAY[month] || {};
+            box.innerHTML = PLAYERS.map(p => {
+                const v = keepTyped && p in prev ? prev[p] : (saved[p] > 0 ? saved[p] : '');
+                return `<div class="flex items-center gap-2"><span class="w-9 text-sm font-bold text-white shrink-0">${duesEsc(p)}</span><input type="number" inputmode="numeric" min="0" data-dues-player="${duesEsc(p)}" value="${duesEsc(v)}" placeholder="미납" class="flex-1 min-w-0 bg-slate-900 border border-slate-700 text-white rounded-xl p-2.5 text-sm focus:border-emerald-500 focus:outline-none"></div>`;
+            }).join('');
+        }
+
+        function initDuesUI() {
+            duesLoadCache();
+            try { if (sessionStorage.getItem(DUES_SESSION_KEY) === DUES_PIN) duesToken = DUES_PIN; } catch (err) { /* 무시 */ }
+            const today = new Date();
+            const ymd = `${today.getFullYear()}-${duesPad(today.getMonth() + 1)}-${duesPad(today.getDate())}`;
+            document.getElementById('duesPayMonth').value = ymd.slice(0, 7);
+            document.getElementById('duesLedDate').value = ymd;
+            const $ = id => document.getElementById(id);
+
+            $('duesYearSelect').addEventListener('change', e => { duesYear = e.target.value; duesRender(); });
+            $('duesTabOverview').addEventListener('click', () => { duesTab = 'overview'; duesRender(); });
+            $('duesTabManage').addEventListener('click', () => { duesTab = 'manage'; duesRender(); });
+
+            $('duesPinForm').addEventListener('submit', e => {
+                e.preventDefault();
+                if ($('duesPinInput').value === DUES_PIN) {
+                    duesToken = DUES_PIN;
+                    try { sessionStorage.setItem(DUES_SESSION_KEY, DUES_PIN); } catch (err) { /* 무시 */ }
+                    $('duesPinInput').value = ''; $('duesPinError').classList.add('hidden');
+                    duesRender();
+                } else { $('duesPinError').classList.remove('hidden'); $('duesPinInput').value = ''; }
+            });
+            $('duesLockBtn').addEventListener('click', () => {
+                duesToken = null;
+                try { sessionStorage.removeItem(DUES_SESSION_KEY); } catch (err) { /* 무시 */ }
+                $('duesMsg').classList.add('hidden');
+                duesRender();
+            });
+
+            $('duesPayMonth').addEventListener('change', () => duesFillPayInputs(false));
+            $('duesQuickBtn').addEventListener('click', () => {
+                const v = parseInt($('duesQuickAmt').value, 10);
+                if (!(v >= 0)) { duesShowMsg('채울 금액을 숫자로 입력해 주세요.', false); return; }
+                document.querySelectorAll('#duesPayInputs input[data-dues-player]').forEach(i => { i.value = v; });
+            });
+            $('duesPaySaveBtn').addEventListener('click', async () => {
+                const month = $('duesPayMonth').value;
+                if (!/^\d{4}-\d{2}$/.test(month)) { duesShowMsg('납부 월을 선택해 주세요.', false); return; }
+                const records = [];
+                for (const inp of document.querySelectorAll('#duesPayInputs input[data-dues-player]')) {
+                    const raw = inp.value.trim();
+                    const amt = raw === '' ? 0 : Number(raw);
+                    if (!Number.isFinite(amt) || amt < 0) { duesShowMsg(`${inp.dataset.duesPlayer}의 금액이 올바르지 않습니다.`, false); return; }
+                    records.push({ player: inp.dataset.duesPlayer, amount: Math.round(amt) });
+                }
+                const btn = $('duesPaySaveBtn'); btn.disabled = true; btn.textContent = '저장 중...';
+                const r = await duesPost({ type: 'duesPayments', date: month, records });
+                btn.disabled = false; btn.textContent = '납부 저장';
+                if (!r.ok) { duesShowMsg(r.msg, false); return; }
+                DUES_PAY[month] = {}; records.forEach(x => { if (x.amount > 0) DUES_PAY[month][x.player] = x.amount; });
+                duesSaveCache();
+                const n = records.filter(x => x.amount > 0).length;
+                duesRender();
+                duesShowMsg(`${month} 납부 ${n}/${records.length}명, 합계 ${duesWon(duesSumPlayers(DUES_PAY[month]))}을 저장했습니다.`, true);
+            });
+
+            $('duesLedAddBtn').addEventListener('click', async () => {
+                const kind = $('duesLedKind').value, date = $('duesLedDate').value;
+                const item = sanitizeUserText($('duesLedItem').value), memo = sanitizeUserText($('duesLedMemo').value);
+                const amount = Number($('duesLedAmt').value);
+                if (!duesNormDate(date)) { duesShowMsg('날짜를 선택해 주세요.', false); return; }
+                if (!item) { duesShowMsg('항목을 입력해 주세요.', false); return; }
+                if (!Number.isFinite(amount) || amount <= 0) { duesShowMsg('금액은 0보다 큰 숫자로 입력해 주세요.', false); return; }
+                const entry = { id: `d${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, date, kind, item, amount: Math.round(amount), memo };
+                const btn = $('duesLedAddBtn'); btn.disabled = true; btn.textContent = '저장 중...';
+                const r = await duesPost({ type: 'duesLedger', records: [entry] });
+                btn.disabled = false; btn.textContent = '내역 추가';
+                if (!r.ok) { duesShowMsg(r.msg, false); return; }
+                DUES_LEDGER.push(entry); duesSaveCache();
+                $('duesLedItem').value = ''; $('duesLedAmt').value = ''; $('duesLedMemo').value = '';
+                duesYear = date.slice(0, 4);
+                duesRender();
+                duesShowMsg(`${kind === '지출' ? '지출' : '기타 수입'} "${item}" ${duesWon(entry.amount)}을 추가했습니다.`, true);
+            });
+
+            $('duesManageLedgerBody').addEventListener('click', async e => {
+                const btn = e.target.closest('[data-dues-del]');
+                if (!btn) return;
+                const id = btn.dataset.duesDel;
+                const entry = DUES_LEDGER.find(x => x.id === id);
+                if (!entry || !confirm(`"${entry.item}" ${duesWon(entry.amount)} 내역을 삭제할까요? 되돌릴 수 없습니다.`)) return;
+                btn.disabled = true;
+                const r = await duesPost({ type: 'duesLedger', action: 'delete', id });
+                if (!r.ok) { btn.disabled = false; duesShowMsg(r.msg, false); return; }
+                DUES_LEDGER = DUES_LEDGER.filter(x => x.id !== id); duesSaveCache();
+                duesRender();
+                duesShowMsg('내역을 삭제했습니다.', true);
+            });
         }
 
         function openActiveAddModal() {
