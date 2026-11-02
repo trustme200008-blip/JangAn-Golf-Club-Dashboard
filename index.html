@@ -1785,7 +1785,7 @@
                 </div>
 
                 <div class="glass-panel p-4 sm:p-6 rounded-2xl">
-                    <h3 class="text-base sm:text-lg font-bold text-white mb-1">지출 · 기타 수입 입력</h3>
+                    <h3 id="duesLedHeading" class="text-base sm:text-lg font-bold text-white mb-1">지출 · 기타 수입 입력</h3>
                     <p class="text-[11px] sm:text-xs text-slate-400 mb-4">경기 후 식대, 상품 구입 같은 지출이나 이자·이월금 같은 기타 수입을 기록합니다.</p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                         <div>
@@ -1812,7 +1812,10 @@
                             <input id="duesLedMemo" type="text" maxlength="80" class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl p-2.5 text-sm focus:border-emerald-500 focus:outline-none">
                         </div>
                     </div>
-                    <button id="duesLedAddBtn" type="button" class="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-sm transition active:scale-95">내역 추가</button>
+                    <div class="flex gap-2">
+                        <button id="duesLedAddBtn" type="button" class="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-sm transition active:scale-95">내역 추가</button>
+                        <button id="duesLedCancelBtn" type="button" class="hidden px-4 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700/60 rounded-xl text-sm font-semibold text-slate-200 transition">수정 취소</button>
+                    </div>
                 </div>
 
                 <div class="glass-panel p-4 sm:p-6 rounded-2xl">
@@ -5219,6 +5222,7 @@
         let duesYear = null;
         let duesTab = 'overview';
         let duesChart = null;
+        let duesEditingId = null; // 수정 중인 내역 id (null이면 새 내역 추가 모드)
 
         const duesWon = n => `${Math.round(n).toLocaleString('ko-KR')}원`;
         const duesEsc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -5437,7 +5441,7 @@
             if (!unlocked) return;
             duesFillPayInputs(false);
             document.getElementById('duesManageLedgerBody').innerHTML = yearLedger.length
-                ? yearLedger.map(e => `<tr><td class="p-2.5 whitespace-nowrap">${e.date}</td><td class="p-2.5 whitespace-nowrap">${e.kind === '지출' ? '지출' : '기타 수입'}</td><td class="p-2.5">${duesEsc(e.item)}</td><td class="p-2.5 text-right whitespace-nowrap">${duesWon(e.amount)}</td><td class="p-2.5 text-right"><button type="button" data-dues-del="${duesEsc(e.id)}" class="btn-danger px-2.5 py-1 text-xs font-bold rounded-lg">삭제</button></td></tr>`).join('')
+                ? yearLedger.map(e => `<tr><td class="p-2.5 whitespace-nowrap">${e.date}</td><td class="p-2.5 whitespace-nowrap">${e.kind === '지출' ? '지출' : '기타 수입'}</td><td class="p-2.5">${duesEsc(e.item)}</td><td class="p-2.5 text-right whitespace-nowrap">${duesWon(e.amount)}</td><td class="p-2.5 text-right whitespace-nowrap"><button type="button" data-dues-edit="${duesEsc(e.id)}" class="px-2.5 py-1 mr-1.5 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-200">수정</button><button type="button" data-dues-del="${duesEsc(e.id)}" class="btn-danger px-2.5 py-1 text-xs font-bold rounded-lg">삭제</button></td></tr>`).join('')
                 : '<tr><td colspan="5" class="p-4 text-center text-slate-400">입력한 내역이 없습니다.</td></tr>';
         }
 
@@ -5480,6 +5484,7 @@
                 duesToken = null;
                 try { sessionStorage.removeItem(DUES_SESSION_KEY); } catch (err) { /* 무시 */ }
                 $('duesMsg').classList.add('hidden');
+                duesEditingId = null;
                 duesRender();
             });
 
@@ -5510,6 +5515,17 @@
                 duesShowMsg(`${month} 납부 ${n}/${records.length}명, 합계 ${duesWon(duesSumPlayers(DUES_PAY[month]))}을 저장했습니다.`, true);
             });
 
+            // 수정 모드: 선택한 내역을 입력칸에 불러오고, 저장하면 수정된 새 내역을 먼저 추가한 뒤 예전 내역을 지웁니다.
+            // (새 내역이 저장되지 않았는데 예전 내역만 사라지는 일이 없도록 이 순서로 합니다. 시트 스크립트 수정·재배포도 필요 없습니다.)
+            const setLedMode = editing => {
+                $('duesLedHeading').textContent = editing ? '지출 · 기타 수입 수정' : '지출 · 기타 수입 입력';
+                $('duesLedAddBtn').textContent = editing ? '수정 저장' : '내역 추가';
+                $('duesLedCancelBtn').classList.toggle('hidden', !editing);
+            };
+            const clearLedForm = () => { $('duesLedItem').value = ''; $('duesLedAmt').value = ''; $('duesLedMemo').value = ''; };
+            const endEdit = () => { duesEditingId = null; setLedMode(false); clearLedForm(); };
+            $('duesLedCancelBtn').addEventListener('click', () => { endEdit(); $('duesMsg').classList.add('hidden'); });
+
             $('duesLedAddBtn').addEventListener('click', async () => {
                 const kind = $('duesLedKind').value, date = $('duesLedDate').value;
                 const item = sanitizeUserText($('duesLedItem').value), memo = sanitizeUserText($('duesLedMemo').value);
@@ -5517,19 +5533,45 @@
                 if (!duesNormDate(date)) { duesShowMsg('날짜를 선택해 주세요.', false); return; }
                 if (!item) { duesShowMsg('항목을 입력해 주세요.', false); return; }
                 if (!Number.isFinite(amount) || amount <= 0) { duesShowMsg('금액은 0보다 큰 숫자로 입력해 주세요.', false); return; }
+                const old = duesEditingId ? DUES_LEDGER.find(x => x.id === duesEditingId) : null;
+                if (duesEditingId && !old) { endEdit(); duesShowMsg('수정하려던 내역을 찾을 수 없습니다. 새로고침 후 다시 시도해 주세요.', false); return; }
+                if (old && old.kind === kind && old.date === date && old.item === item && old.amount === Math.round(amount) && (old.memo || '') === memo) {
+                    endEdit(); duesShowMsg('바뀐 내용이 없어 그대로 두었습니다.', true); return;
+                }
                 const entry = { id: `d${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, date, kind, item, amount: Math.round(amount), memo };
                 const btn = $('duesLedAddBtn'); btn.disabled = true; btn.textContent = '저장 중...';
                 const r = await duesPost({ type: 'duesLedger', records: [entry] });
-                btn.disabled = false; btn.textContent = '내역 추가';
+                btn.disabled = false; btn.textContent = old ? '수정 저장' : '내역 추가';
                 if (!r.ok) { duesShowMsg(r.msg, false); return; }
-                DUES_LEDGER.push(entry); duesSaveCache();
-                $('duesLedItem').value = ''; $('duesLedAmt').value = ''; $('duesLedMemo').value = '';
+                DUES_LEDGER.push(entry);
+                let leftover = null;
+                if (old) {
+                    const d = await duesPost({ type: 'duesLedger', action: 'delete', id: old.id });
+                    if (d.ok) DUES_LEDGER = DUES_LEDGER.filter(x => x.id !== old.id); else leftover = d.msg;
+                }
+                duesSaveCache();
+                endEdit();
                 duesYear = date.slice(0, 4);
                 duesRender();
-                duesShowMsg(`${kind === '지출' ? '지출' : '기타 수입'} "${item}" ${duesWon(entry.amount)}을 추가했습니다.`, true);
+                if (leftover) duesShowMsg(`수정한 내용은 저장했지만 예전 내역을 지우지 못해 같은 항목이 두 번 보입니다. 아래 목록에서 예전 내역(${old.date} ${old.item})을 삭제해 주세요. (${leftover})`, false);
+                else duesShowMsg(old ? `"${item}" 내역을 수정했습니다.` : `${kind === '지출' ? '지출' : '기타 수입'} "${item}" ${duesWon(entry.amount)}을 추가했습니다.`, true);
             });
 
             $('duesManageLedgerBody').addEventListener('click', async e => {
+                const editBtn = e.target.closest('[data-dues-edit]');
+                if (editBtn) {
+                    const en = DUES_LEDGER.find(x => x.id === editBtn.dataset.duesEdit);
+                    if (!en) return;
+                    duesEditingId = en.id;
+                    $('duesLedKind').value = en.kind; $('duesLedDate').value = en.date; $('duesLedItem').value = en.item;
+                    $('duesLedAmt').value = en.amount; $('duesLedMemo').value = en.memo || '';
+                    $('duesLedHeading').textContent = '지출 · 기타 수입 수정';
+                    $('duesLedAddBtn').textContent = '수정 저장';
+                    $('duesLedCancelBtn').classList.remove('hidden');
+                    duesShowMsg(`"${en.item}" 내역을 수정 중입니다. 위 입력칸에서 고친 뒤 "수정 저장"을 누르세요.`, true);
+                    $('duesLedHeading').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
                 const btn = e.target.closest('[data-dues-del]');
                 if (!btn) return;
                 const id = btn.dataset.duesDel;
@@ -5539,6 +5581,7 @@
                 const r = await duesPost({ type: 'duesLedger', action: 'delete', id });
                 if (!r.ok) { btn.disabled = false; duesShowMsg(r.msg, false); return; }
                 DUES_LEDGER = DUES_LEDGER.filter(x => x.id !== id); duesSaveCache();
+                if (duesEditingId === id) endEdit();
                 duesRender();
                 duesShowMsg('내역을 삭제했습니다.', true);
             });
