@@ -46,7 +46,7 @@ const ADMIN_TOKEN = '0243';
 // 동호회 회비(DuesPayments / DuesLedger) 쓰기 요청은 관리자 토큰이 아니라 이 "회비 총무 전용" 토큰이 와야 처리됩니다.
 // index.html의 DUES_PIN과 반드시 같은 값이어야 합니다 — 바꾸면 양쪽을 같이 바꾸고 재배포해주세요.
 // 조회(doGet)는 토큰 없이 누구나 가능합니다(회원 모두 현황을 볼 수 있게 하려는 의도입니다).
-const DUES_TOKEN = '7391';
+const DUES_TOKEN = '0971';
 
 const SHEET_NAMES = {
   screenGolf: 'Rounds',
