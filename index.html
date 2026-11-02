@@ -1775,7 +1775,7 @@
                         <div class="flex-1">
                             <label class="block text-[11px] text-slate-400 mb-1" for="duesQuickAmt">같은 금액으로 한 번에 채우기 (원)</label>
                             <div class="flex gap-2">
-                                <input id="duesQuickAmt" type="number" inputmode="numeric" min="0" placeholder="예: 30000" class="flex-1 min-w-0 bg-slate-900 border border-slate-700 text-white rounded-xl p-2.5 text-sm focus:border-emerald-500 focus:outline-none">
+                                <input id="duesQuickAmt" type="text" inputmode="numeric" data-money autocomplete="off" placeholder="예: 30,000" class="flex-1 min-w-0 bg-slate-900 border border-slate-700 text-white rounded-xl p-2.5 text-sm focus:border-emerald-500 focus:outline-none">
                                 <button id="duesQuickBtn" type="button" class="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700/60 rounded-xl text-xs font-semibold text-slate-200 transition whitespace-nowrap">전원 채우기</button>
                             </div>
                         </div>
@@ -1805,7 +1805,7 @@
                         </div>
                         <div>
                             <label class="block text-[11px] text-slate-400 mb-1" for="duesLedAmt">금액 (원)</label>
-                            <input id="duesLedAmt" type="number" inputmode="numeric" min="1" placeholder="예: 85000" class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl p-2.5 text-sm focus:border-emerald-500 focus:outline-none">
+                            <input id="duesLedAmt" type="text" inputmode="numeric" data-money autocomplete="off" placeholder="예: 85,000" class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl p-2.5 text-sm focus:border-emerald-500 focus:outline-none">
                         </div>
                         <div class="sm:col-span-2">
                             <label class="block text-[11px] text-slate-400 mb-1" for="duesLedMemo">메모 (선택)</label>
@@ -5231,6 +5231,19 @@
             return n.toLocaleString('ko-KR');
         }
         const duesPad = n => String(n).padStart(2, '0');
+        // ----- 금액 입력칸: 천 단위 쉼표 -----
+        const duesDigits = v => String(v == null ? '' : v).replace(/[^0-9]/g, '');
+        const duesFmtNum = n => { const d = duesDigits(n); return d === '' ? '' : Number(d.slice(0, 12)).toLocaleString('ko-KR'); };
+        // 입력할 때마다 숫자만 남기고 쉼표를 다시 붙이며, 가운데를 고쳐도 커서가 튀지 않게 위치를 유지합니다.
+        function duesFormatMoneyInput(el) {
+            const caret = el.selectionStart == null ? el.value.length : el.selectionStart;
+            const digitsBefore = duesDigits(el.value.slice(0, caret)).length;
+            const out = duesFmtNum(el.value);
+            el.value = out;
+            let pos = 0, seen = 0;
+            while (pos < out.length && seen < digitsBefore) { if (/\d/.test(out[pos])) seen++; pos++; }
+            try { el.setSelectionRange(pos, pos); } catch (err) { /* 일부 환경은 지원하지 않음 */ }
+        }
         function duesNormMonth(v) { const m = String(v == null ? '' : v).trim().match(/^(\d{4})-(\d{1,2})/); return m ? `${m[1]}-${duesPad(m[2])}` : ''; }
         function duesNormDate(v) { const m = String(v == null ? '' : v).trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})/); return m ? `${m[1]}-${duesPad(m[2])}-${duesPad(m[3])}` : ''; }
         const duesSumPlayers = obj => Object.values(obj || {}).reduce((a, v) => a + (Number(v) > 0 ? Number(v) : 0), 0);
@@ -5454,7 +5467,7 @@
             const saved = DUES_PAY[month] || {};
             box.innerHTML = PLAYERS.map(p => {
                 const v = keepTyped && p in prev ? prev[p] : (saved[p] > 0 ? saved[p] : '');
-                return `<div class="flex items-center gap-2"><span class="w-9 text-sm font-bold text-white shrink-0">${duesEsc(p)}</span><input type="number" inputmode="numeric" min="0" data-dues-player="${duesEsc(p)}" value="${duesEsc(v)}" placeholder="미납" class="flex-1 min-w-0 bg-slate-900 border border-slate-700 text-white rounded-xl p-2.5 text-sm focus:border-emerald-500 focus:outline-none"></div>`;
+                return `<div class="flex items-center gap-2"><span class="w-9 text-sm font-bold text-white shrink-0">${duesEsc(p)}</span><input type="text" inputmode="numeric" data-money autocomplete="off" data-dues-player="${duesEsc(p)}" value="${duesEsc(duesFmtNum(v))}" placeholder="미납" class="flex-1 min-w-0 bg-slate-900 border border-slate-700 text-white rounded-xl p-2.5 text-sm focus:border-emerald-500 focus:outline-none"></div>`;
             }).join('');
         }
 
@@ -5467,6 +5480,8 @@
             document.getElementById('duesLedDate').value = ymd;
             const $ = id => document.getElementById(id);
 
+            // data-money 칸은 어떤 칸이든 입력 즉시 천 단위 쉼표를 붙입니다(납부 입력칸처럼 나중에 만들어지는 칸 포함).
+            $('mainDues').addEventListener('input', e => { if (e.target.matches && e.target.matches('[data-money]')) duesFormatMoneyInput(e.target); });
             $('duesYearSelect').addEventListener('change', e => { duesYear = e.target.value; duesRender(); });
             $('duesTabOverview').addEventListener('click', () => { duesTab = 'overview'; duesRender(); });
             $('duesTabManage').addEventListener('click', () => { duesTab = 'manage'; duesRender(); });
@@ -5490,16 +5505,16 @@
 
             $('duesPayMonth').addEventListener('change', () => duesFillPayInputs(false));
             $('duesQuickBtn').addEventListener('click', () => {
-                const v = parseInt($('duesQuickAmt').value, 10);
-                if (!(v >= 0)) { duesShowMsg('채울 금액을 숫자로 입력해 주세요.', false); return; }
-                document.querySelectorAll('#duesPayInputs input[data-dues-player]').forEach(i => { i.value = v; });
+                const digits = duesDigits($('duesQuickAmt').value);
+                if (digits === '') { duesShowMsg('채울 금액을 숫자로 입력해 주세요.', false); return; }
+                document.querySelectorAll('#duesPayInputs input[data-dues-player]').forEach(i => { i.value = duesFmtNum(digits); });
             });
             $('duesPaySaveBtn').addEventListener('click', async () => {
                 const month = $('duesPayMonth').value;
                 if (!/^\d{4}-\d{2}$/.test(month)) { duesShowMsg('납부 월을 선택해 주세요.', false); return; }
                 const records = [];
                 for (const inp of document.querySelectorAll('#duesPayInputs input[data-dues-player]')) {
-                    const raw = inp.value.trim();
+                    const raw = duesDigits(inp.value);
                     const amt = raw === '' ? 0 : Number(raw);
                     if (!Number.isFinite(amt) || amt < 0) { duesShowMsg(`${inp.dataset.duesPlayer}의 금액이 올바르지 않습니다.`, false); return; }
                     records.push({ player: inp.dataset.duesPlayer, amount: Math.round(amt) });
@@ -5529,7 +5544,7 @@
             $('duesLedAddBtn').addEventListener('click', async () => {
                 const kind = $('duesLedKind').value, date = $('duesLedDate').value;
                 const item = sanitizeUserText($('duesLedItem').value), memo = sanitizeUserText($('duesLedMemo').value);
-                const amount = Number($('duesLedAmt').value);
+                const amount = Number(duesDigits($('duesLedAmt').value));
                 if (!duesNormDate(date)) { duesShowMsg('날짜를 선택해 주세요.', false); return; }
                 if (!item) { duesShowMsg('항목을 입력해 주세요.', false); return; }
                 if (!Number.isFinite(amount) || amount <= 0) { duesShowMsg('금액은 0보다 큰 숫자로 입력해 주세요.', false); return; }
@@ -5564,7 +5579,7 @@
                     if (!en) return;
                     duesEditingId = en.id;
                     $('duesLedKind').value = en.kind; $('duesLedDate').value = en.date; $('duesLedItem').value = en.item;
-                    $('duesLedAmt').value = en.amount; $('duesLedMemo').value = en.memo || '';
+                    $('duesLedAmt').value = duesFmtNum(en.amount); $('duesLedMemo').value = en.memo || '';
                     $('duesLedHeading').textContent = '지출 · 기타 수입 수정';
                     $('duesLedAddBtn').textContent = '수정 저장';
                     $('duesLedCancelBtn').classList.remove('hidden');
