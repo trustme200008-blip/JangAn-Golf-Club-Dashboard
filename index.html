@@ -984,6 +984,17 @@
 
         <!-- VIEW 4: SCRATCH GAME (선택한 라운드 일자의 G핸디 기준 핸디차이) -->
         <div id="viewScratch" class="hidden space-y-6">
+            <!-- 주간 코멘트: 선택한 라운드 일자의 요약 (라운드 추가 후 "문자 복사"에 들어가는 코멘트와 같은 내용) -->
+            <div class="glass-panel p-4 sm:p-6 rounded-2xl">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                    <div>
+                        <h3 class="text-base sm:text-lg font-bold text-white">주간 코멘트 <span id="weeklyCommentDate" class="text-xs font-normal text-slate-400"></span></h3>
+                        <p class="text-[11px] sm:text-xs text-slate-400 mt-0.5">상단 "라운드 일자"에서 고른 회차 기준입니다. 1위, 닉네임 변화, 순위 급변, 지표의 큰 변화를 짧게 정리했습니다.</p>
+                    </div>
+                    <button id="weeklyCommentCopyBtn" type="button" class="shrink-0 px-3 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs transition whitespace-nowrap">문자로 복사</button>
+                </div>
+                <ul id="weeklyCommentList" class="space-y-1.5 text-xs sm:text-sm text-slate-300 leading-relaxed"></ul>
+            </div>
             <div class="glass-panel p-4 sm:p-6 rounded-2xl">
                 <div class="mb-4 sm:mb-6">
                     <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
@@ -2463,6 +2474,13 @@
             initScaleTableUI();
             initMultiTrendUI();
             initRankFlowUI();
+            const wcBtn = document.getElementById('weeklyCommentCopyBtn');
+            if (wcBtn) wcBtn.addEventListener('click', async () => {
+                const idx = Math.min(Math.max(selectedDateIndex, 0), DATES.length - 1);
+                const ok = await copyTextToClipboard(buildScreenRoundShareText(DATES[idx], screenRoundDataAt(idx), '주간 리포트'));
+                wcBtn.textContent = ok ? '복사됨 ✓' : '복사 실패 (직접 선택해 복사해주세요)';
+                setTimeout(() => { wcBtn.textContent = '문자로 복사'; }, 1800);
+            });
             initDuesUI();
 
             // 구글 시트 연동이 설정돼 있으면, 다른 플레이어/관리자가 추가해둔 데이터를 불러와 병합
@@ -2892,7 +2910,7 @@
                 // 카톡 등에 바로 공유할 수 있도록 "문자 복사" 버튼이 달린 안내 토스트를 띄움
                 showRoundNotification(
                     '라운드가 추가되었습니다',
-                    `2026-${formattedDate.replace('/', '-')} 스크린골프 결과를 문자로 복사할 수 있습니다.`,
+                    `2026-${formattedDate.replace('/', '-')} 스크린골프 결과와 주간 코멘트를 문자로 복사할 수 있습니다.`,
                     buildScreenRoundShareText(formattedDate, dataByPlayer)
                 );
             });
@@ -4484,6 +4502,7 @@
             }
 
             renderRankFlow();
+            renderWeeklyComment();
         }
 
         // ===== 플레이어 순위 변화 (G핸디 기준 범프 차트 + 닉네임) =====
@@ -4681,6 +4700,137 @@
             if (rankFlowTimer) { clearInterval(rankFlowTimer); rankFlowTimer = null; }
             const btn = document.getElementById('rankFlowPlayBtn');
             if (btn) btn.textContent = '▶ 시즌 재생';
+        }
+
+        // ===== 주간 코멘트 (라운드 추가 후 문자 복사 + 게임 탭 "주간 코멘트") =====
+        // 선택한 회차(idx)를 직전 회차·최근 5회와 비교해 눈에 띄는 것만 짧은 줄로 만듭니다(규칙 기반, 비 LLM).
+        // 우선순위: 1위 → 언더 달성 → 닉네임 변경 → 순위 급변 → 지표 큰 변화 → 개인 기록 → 접전. 최대 WEEKLY_MAX_LINES줄.
+        const WEEKLY_MAX_LINES = 6;
+        const WEEKLY_SCORE_JUMP = 0.6;   // 5점 척도 점수가 최근 5회 평균보다 이만큼 이상 달라지면 "큰 변화"(약 비거리 12m / 비율 12%p / 퍼팅 0.12)
+        const WEEKLY_CLOSE_GAP = 0.2;    // 1·2위 G핸디 차이가 이 값 이하면 접전
+
+        function screenWeeklyComment(idx) {
+            if (!(idx >= 0 && idx < DATES.length)) return [];
+            const { ranks } = rankFlowCompute(idx);
+            const gh = (p, i) => GOLF_DATA[p].gHandicap[i];
+            const sign = v => (v > 0 ? '+' : '');
+            const firstLine = [], underLine = [], nickLine = [], jumpLine = [], metricLine = [], recordLine = [], closeLine = [];
+
+            // 1) 1위
+            const firsts = PLAYERS.filter(p => ranks[p][idx] === 1);
+            const prevFirsts = idx > 0 ? PLAYERS.filter(p => ranks[p][idx - 1] === 1) : [];
+            if (firsts.length) {
+                const best = gh(firsts[0], idx).toFixed(1);
+                if (prevFirsts.length && !firsts.some(p => prevFirsts.includes(p))) {
+                    firstLine.push(`1위 교체 — ${prevFirsts.join(', ')} → ${firsts.join(', ')} (G핸디 ${best})`);
+                } else if (firsts.length > 1) {
+                    firstLine.push(`공동 1위 ${firsts.join(', ')} (G핸디 ${best})`);
+                } else {
+                    let streak = 0;
+                    for (let i = idx; i >= 0 && ranks[firsts[0]][i] === 1; i--) streak++;
+                    firstLine.push(`1위 ${firsts[0]} (G핸디 ${best})${streak >= 2 ? ` · ${streak}주 연속` : ''}`);
+                }
+            }
+
+            // 2) 언더 달성 (G핸디 0 미만)
+            const unders = PLAYERS.filter(p => gh(p, idx) < 0).sort((a, b) => gh(a, idx) - gh(b, idx));
+            if (unders.length) underLine.push(`언더 달성 — ${unders.map(p => `${p} ${gh(p, idx).toFixed(1)}`).join(', ')}`);
+
+            // 3) 닉네임 변경 (직전 회차와 비교, 5회차부터)
+            if (idx >= 5) {
+                const hist = rankFlowHistory(ranks, idx);
+                const changes = [];
+                PLAYERS.forEach(p => {
+                    const segs = hist[p];
+                    const cur = segs[segs.length - 1];
+                    const before = segs.find(g => g.from <= idx - 1 && idx - 1 <= g.to);
+                    if (before && cur && before.nick !== cur.nick) changes.push(`${p} “${before.nick}”→“${cur.nick}”`);
+                });
+                if (changes.length) nickLine.push(`닉네임 변경 — ${changes.join(', ')}`);
+            }
+
+            // 4) 순위 급변 (직전 회차 대비 RANK_FLOW_JUMP계단 이상)
+            if (idx >= 1) {
+                const moves = [];
+                PLAYERS.forEach(p => {
+                    const mv = ranks[p][idx - 1] - ranks[p][idx];
+                    if (Math.abs(mv) >= RANK_FLOW_JUMP) moves.push({ p, mv, from: ranks[p][idx - 1], to: ranks[p][idx] });
+                });
+                moves.sort((a, b) => Math.abs(b.mv) - Math.abs(a.mv));
+                if (moves.length) jumpLine.push(`순위 급변 — ${moves.map(m => `${m.mv > 0 ? '▲' : '▼'}${m.p} ${m.from}위→${m.to}위`).join(', ')}`);
+            }
+
+            // 5) 지표의 큰 변화: 5점 척도 점수가 직전 최대 5회 평균 점수와 WEEKLY_SCORE_JUMP 이상 차이 나는 지표(선수당 가장 큰 하나)
+            if (idx >= 2) {
+                const from = Math.max(0, idx - 5);
+                const found = [];
+                PLAYERS.forEach(p => {
+                    let top = null;
+                    MULTI_TREND_ORDER.forEach(key => {
+                        const hist = GOLF_DATA[p][key].slice(from, idx);
+                        const avgRaw = hist.reduce((a, b) => a + b, 0) / hist.length;
+                        const avgScore = hist.reduce((a, v) => a + scoreFromScale(key, v), 0) / hist.length;
+                        const v = GOLF_DATA[p][key][idx];
+                        const d = scoreFromScale(key, v) - avgScore;
+                        if (Math.abs(d) >= WEEKLY_SCORE_JUMP && (!top || Math.abs(d) > Math.abs(top.d))) top = { p, key, v, avgRaw, d };
+                    });
+                    if (top) found.push(top);
+                });
+                found.sort((a, b) => Math.abs(b.d) - Math.abs(a.d));
+                if (found.length) {
+                    // 문자가 길어지지 않도록 가장 큰 2개만, 짧은 형식으로 보여줍니다.
+                    const txt = found.slice(0, 2).map(f => {
+                        const m = MULTI_TREND_META[f.key];
+                        return `${f.p} ${m.label} ${f.v.toFixed(m.dec)}${m.rawUnit} (최근 5회 평균 대비 ${sign(f.v - f.avgRaw)}${(f.v - f.avgRaw).toFixed(m.dec)}${m.deltaUnit} ${f.d > 0 ? '개선' : '악화'})`;
+                    });
+                    metricLine.push(`지표 큰 변화 — ${txt.join(', ')}${found.length > 2 ? ` 외 ${found.length - 2}명` : ''}`);
+                }
+            }
+
+            // 6) 개인 최고 기록 경신 (이번 회차가 지금까지의 개인 기록 중 가장 좋음)
+            if (idx >= 3) {
+                const recs = [];
+                PLAYERS.forEach(p => MULTI_TREND_ORDER.forEach(key => {
+                    const arr = GOLF_DATA[p][key];
+                    const higherBetter = key === 'distance' || key === 'fir' || key === 'gir';
+                    const prev = arr.slice(0, idx);
+                    const bestPrev = higherBetter ? Math.max(...prev) : Math.min(...prev);
+                    const v = arr[idx];
+                    if (higherBetter ? v > bestPrev : v < bestPrev) {
+                        const m = MULTI_TREND_META[key];
+                        recs.push(`${p} ${m.label} ${v.toFixed(m.dec)}${m.rawUnit}`);
+                    }
+                }));
+                if (recs.length) recordLine.push(`개인 기록 경신 — ${recs.slice(0, 3).join(', ')}${recs.length > 3 ? ` 외 ${recs.length - 3}건` : ''}`);
+            }
+
+            // 7) 접전: 1위와 2위 G핸디 차이가 아주 작음
+            if (firsts.length === 1) {
+                const seconds = PLAYERS.filter(p => ranks[p][idx] === 2);
+                if (seconds.length) {
+                    const gap = gh(seconds[0], idx) - gh(firsts[0], idx);
+                    if (gap <= WEEKLY_CLOSE_GAP + 1e-9) closeLine.push(`1·2위 접전 — ${firsts[0]}와 ${seconds.join(', ')}의 G핸디 차이 ${gap.toFixed(1)}`);
+                }
+            }
+
+            return [].concat(firstLine, underLine, nickLine, jumpLine, metricLine, recordLine, closeLine).slice(0, WEEKLY_MAX_LINES);
+        }
+
+        function screenRoundDataAt(idx) {
+            const data = {};
+            PLAYERS.forEach(p => { data[p] = { gHandicap: GOLF_DATA[p].gHandicap[idx] }; });
+            return data;
+        }
+
+        function renderWeeklyComment() {
+            const list = document.getElementById('weeklyCommentList');
+            if (!list || activeMode !== 'scratch' || !DATES.length) return;
+            const idx = Math.min(Math.max(selectedDateIndex, 0), DATES.length - 1);
+            document.getElementById('weeklyCommentDate').textContent = `(2026-${DATES[idx].replace('/', '-')})`;
+            const lines = screenWeeklyComment(idx);
+            list.innerHTML = lines.length
+                ? lines.map(l => `<li class="flex gap-2"><span class="text-emerald-400 shrink-0">•</span><span>${l.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))}</span></li>`).join('')
+                : '<li class="text-slate-400">이 회차에는 정리할 코멘트가 없습니다.</li>';
         }
 
         // 회차당 가로 간격: 휴대폰은 넉넉히(배지 글자가 겹치지 않게) 잡고 좌우로 스크롤, PC는 한 화면에 가깝게.
@@ -6063,7 +6213,7 @@
         // 카톡 공유용 문자는 너무 길어지지 않도록 핵심 지표 하나만, 전원을 한 줄로 보여줍니다.
         // (스크린골프는 원래 5개 지표×5명이 전부 나와 문자가 너무 길었습니다. 나머지 지표는
         // 앱에서 확인할 수 있습니다.)
-        function buildScreenRoundShareText(formattedDate, dataByPlayer) {
+        function buildScreenRoundShareText(formattedDate, dataByPlayer, header) {
             const metric = { key: 'gHandicap', label: 'G핸디', unit: '', decimals: 1 };
             const parts = PLAYERS
                 .map(player => {
@@ -6071,12 +6221,16 @@
                     return (v == null || isNaN(v)) ? null : `${player} ${v.toFixed(metric.decimals)}${metric.unit}`;
                 })
                 .filter(Boolean);
-            return [
-                '라운드가 추가되었습니다.',
+            // 주간 코멘트: 이 라운드가 이미 반영된 상태에서(추가 직후) 직전 회차·최근 5회와 비교해 만듭니다.
+            const comment = screenWeeklyComment(DATES.indexOf(formattedDate));
+            const out = [
+                header || '라운드가 추가되었습니다.',
                 `⛳ 2026-${formattedDate.replace('/', '-')} 스크린골프 (${metric.label})`,
-                parts.join(' · '),
-                DASHBOARD_URL
-            ].join('\n');
+                parts.join(' · ')
+            ];
+            if (comment.length) out.push('', '📝 주간 코멘트', ...comment.map(l => '• ' + l));
+            out.push(DASHBOARD_URL);
+            return out.join('\n');
         }
 
         function buildCourseRoundShareText(formattedDate, dataByPlayer, courseName) {
